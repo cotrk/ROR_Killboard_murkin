@@ -22,7 +22,15 @@
     "react-i18next": "^15.5.3",
     "react-router": "^7.7.1",
     "recharts": "^3.6.0",
-    "simpleheat": "^0.4.0"
+    "simpleheat": "^0.4.0",
+    "vite-plugin-pwa": "^1.2.0",
+    "workbox-cacheable-response": "^7.4.0",
+    "workbox-core": "^7.4.0",
+    "workbox-expiration": "^7.4.0",
+    "workbox-precaching": "^7.4.0",
+    "workbox-routing": "^7.4.0",
+    "workbox-strategies": "^7.4.0",
+    "workbox-window": "^7.4.0"
   },
   "devDependencies": {
     "@eslint/js": "^9.33.0",

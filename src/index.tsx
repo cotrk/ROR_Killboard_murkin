@@ -6,6 +6,7 @@ import { BrowserRouter } from 'react-router';
 import { AppErrorBoundary } from '@/components/global/AppErrorBoundary';
 import { ThemeProvider } from '@/contexts/ThemeContext';
 import App from './App';
+import { registerSW } from 'virtual:pwa-register';
 
 import { API_CONFIG } from './config/constants';
 
@@ -17,6 +18,22 @@ const client = new ApolloClient({
 const container = document.getElementById('root');
 if (container == null) throw new Error('Root element not found');
 const root = createRoot(container);
+
+if (import.meta.env.PROD) {
+  const updateSW = registerSW({
+    immediate: true,
+    onNeedRefresh() {
+      window.dispatchEvent(
+        new CustomEvent('pwa:need-refresh', {
+          detail: {
+            updateSW,
+          },
+        }),
+      );
+    },
+  });
+}
+
 root.render(
   <React.StrictMode>
     <ThemeProvider>

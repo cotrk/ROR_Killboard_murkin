@@ -3,11 +3,17 @@ import { useLocation } from 'react-router';
 import './i18n/config';
 import React from 'react';
 import { AppRoutes } from '@/routes/AppRoutes';
+import { OfflineIndicator } from '@/components/pwa/OfflineIndicator';
+import { PwaUpdateToast } from '@/components/pwa/PwaUpdateToast';
 
 // Extend the Window interface to include gtag
 declare global {
   interface Window {
-    gtag?: (command: string, eventName: string, options: { page_location: string }) => void;
+    gtag?: (
+      command: string,
+      eventName: string,
+      options: { page_location: string },
+    ) => void;
   }
 }
 
@@ -25,7 +31,13 @@ function usePageViews() {
 function App() {
   usePageViews();
 
-  return <AppRoutes />;
+  return (
+    <>
+      <OfflineIndicator />
+      <PwaUpdateToast />
+      <AppRoutes />
+    </>
+  );
 }
 
 export default App;
