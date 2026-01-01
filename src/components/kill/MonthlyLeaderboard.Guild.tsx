@@ -1,13 +1,11 @@
 import { gql, useQuery } from '@apollo/client';
 import { useTranslation } from 'react-i18next';
 import { LeaderboardGuildTable } from '@/components/kill/LeaderboardGuildTable';
+import { LoadingState } from '@/components/shared/LoadingState';
 import { ReactElement } from 'react';
 
 const MONTHLY_GUILD_LEADERBOARD = gql`
-  query GetMonthlyGuildLeaderboard(
-    $year: Int!
-    $month: Int!
-  ) {
+  query GetMonthlyGuildLeaderboard($year: Int!, $month: Int!) {
     monthlyGuildKillLeaderboard(year: $year, month: $month) {
       rank
       kills
@@ -24,7 +22,9 @@ interface MonthlyLeaderboardGuildProps {
   guildId?: string;
 }
 
-export function MonthlyLeaderboardGuild({ guildId }: MonthlyLeaderboardGuildProps): ReactElement {
+export function MonthlyLeaderboardGuild({
+  guildId,
+}: MonthlyLeaderboardGuildProps): ReactElement {
   const { t } = useTranslation(['common', 'leaderboard']);
 
   const now = new Date();
@@ -39,9 +39,17 @@ export function MonthlyLeaderboardGuild({ guildId }: MonthlyLeaderboardGuildProp
     skip: !guildId, // Only run query if guildId is provided
   });
 
-  if (loading) return <div className="skeleton h-64"></div>;
-  if (error) return <div className="alert alert-error">Error loading guild leaderboard: {error.message}</div>;
-  if (!data?.monthlyGuildKillLeaderboard) return <div className="alert alert-info">No leaderboard data available</div>;
+  if (loading) return <LoadingState size="lg" className="py-12" />;
+  if (error)
+    return (
+      <div className="alert alert-error">
+        Error loading guild leaderboard: {error.message}
+      </div>
+    );
+  if (!data?.monthlyGuildKillLeaderboard)
+    return (
+      <div className="alert alert-info">No leaderboard data available</div>
+    );
 
   return (
     <div className="card bg-base-100 shadow-xl">
@@ -49,10 +57,8 @@ export function MonthlyLeaderboardGuild({ guildId }: MonthlyLeaderboardGuildProp
         <h2 className="card-title">
           {t('leaderboard:monthlyGuildLeaderboard')} - {month}/{year}
         </h2>
-        
-        <LeaderboardGuildTable 
-          data={data.monthlyGuildKillLeaderboard}
-        />
+
+        <LeaderboardGuildTable data={data.monthlyGuildKillLeaderboard} />
       </div>
     </div>
   );

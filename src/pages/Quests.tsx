@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { gql, useQuery } from '@apollo/client';
 import { ReactElement } from 'react';
 import { GetQuestsQuery } from '@/__generated__/graphql';
+import { LoadingState } from '@/components/shared/LoadingState';
 
 const QUESTS = gql`
   query GetQuests($first: Int, $after: String) {
@@ -41,8 +42,13 @@ export function Quests(): ReactElement {
     },
   });
 
-  if (loading && !data) return <div className="skeleton h-64"></div>;
-  if (error) return <div className="alert alert-error">Error loading quests: {error.message}</div>;
+  if (loading && !data) return <LoadingState size="lg" className="py-12" />;
+  if (error)
+    return (
+      <div className="alert alert-error">
+        Error loading quests: {error.message}
+      </div>
+    );
 
   const quests = data?.quests?.nodes || [];
 
@@ -62,11 +68,11 @@ export function Quests(): ReactElement {
         <nav className="breadcrumbs text-sm">
           <ul>
             <li>
-              <Link to="/" className="link-hover link-primary">{t('common:home')}</Link>
+              <Link to="/" className="link-hover link-primary">
+                {t('common:home')}
+              </Link>
             </li>
-            <li className="text-base-content/60">
-              {t('common:quests')}
-            </li>
+            <li className="text-base-content/60">{t('common:quests')}</li>
           </ul>
         </nav>
       </div>
@@ -74,11 +80,9 @@ export function Quests(): ReactElement {
       <div className="card bg-base-100 shadow-xl mb-6">
         <div className="card-body">
           <h2 className="card-title text-2xl mb-4">{t('common:quests')}</h2>
-          
+
           {search && (
-            <div className="alert alert-info mb-4">
-              Searching for: {search}
-            </div>
+            <div className="alert alert-info mb-4">Searching for: {search}</div>
           )}
 
           <div className="overflow-x-auto">
@@ -99,7 +103,7 @@ export function Quests(): ReactElement {
                       </div>
                     </td>
                     <td>
-                      <Link 
+                      <Link
                         to={`/quest/${quest.id}`}
                         className="link-hover link-primary font-medium"
                       >
@@ -133,7 +137,9 @@ export function Quests(): ReactElement {
 
           {quests.length === 0 && !loading && (
             <div className="alert alert-info">
-              {search ? 'No quests found matching your search.' : 'No quests available.'}
+              {search
+                ? 'No quests found matching your search.'
+                : 'No quests available.'}
             </div>
           )}
         </div>

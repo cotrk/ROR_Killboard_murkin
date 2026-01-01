@@ -1,10 +1,11 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLazyQuery } from '@apollo/client';
 import { Link } from 'react-router';
 import { SEARCH } from '@/graphql/queries/killQueries';
 import { debounce } from 'lodash';
 import { SearchResult } from '@/types';
+import { LoadingState } from '@/components/shared/LoadingState';
 
 interface SearchWithSuggestionsProps {
   isPlayer?: boolean;
@@ -13,11 +14,10 @@ interface SearchWithSuggestionsProps {
   onSubmit?: (query: string) => void;
 }
 
-export const SearchWithSuggestions: React.FC<SearchWithSuggestionsProps> = ({ 
-  isPlayer = true,
+export const SearchWithSuggestions: React.FC<SearchWithSuggestionsProps> = ({
   placeholder,
   initialQuery,
-  onSubmit
+  onSubmit,
 }) => {
   const { t } = useTranslation('components');
   const [query, setQuery] = useState(initialQuery || '');
@@ -51,7 +51,7 @@ export const SearchWithSuggestions: React.FC<SearchWithSuggestionsProps> = ({
           setIsLoading(false);
         }
       }, 300),
-    [searchAPI]
+    [searchAPI],
   );
 
   useEffect(() => {
@@ -60,7 +60,7 @@ export const SearchWithSuggestions: React.FC<SearchWithSuggestionsProps> = ({
     } else {
       setSuggestions([]);
     }
-    
+
     return () => {
       debouncedSearch.cancel();
     };
@@ -139,36 +139,40 @@ export const SearchWithSuggestions: React.FC<SearchWithSuggestionsProps> = ({
       </div>
 
       {showSuggestions && query.length >= 2 && (
-        <div 
-          className="card bg-base-100 shadow-xl border border-base-300" 
-          style={{ 
-            position: 'absolute', 
-            top: '100%', 
-            left: 0, 
-            right: 0, 
+        <div
+          className="card bg-base-100 shadow-xl border border-base-300"
+          style={{
+            position: 'absolute',
+            top: '100%',
+            left: 0,
+            right: 0,
             zIndex: 1000,
             maxHeight: '300px',
-            overflowY: 'auto'
+            overflowY: 'auto',
           }}
         >
           <div className="card-body p-0">
             {isLoading ? (
-              <div className="flex justify-center p-4">
-                <span className="loading loading-spinner loading-md"></span>
-              </div>
+              <LoadingState size="md" className="p-4" />
             ) : suggestions.length > 0 ? (
               <ul className="menu">
-                {suggestions.map((result, index) => (
+                {suggestions.map((result) => (
                   <li key={result.id}>
-                    <Link 
+                    <Link
                       to={getSuggestionLink(result)}
                       className="flex items-center gap-3 p-3 hover:bg-base-200 transition-colors"
                       onClick={() => setShowSuggestions(false)}
                     >
-                      <i className={`fas ${getSuggestionIcon(result.type)} text-base-content/60`}></i>
+                      <i
+                        className={`fas ${getSuggestionIcon(result.type)} text-base-content/60`}
+                      ></i>
                       <div className="flex-1">
-                        <div className="font-medium text-base-content">{result.name}</div>
-                        <div className="text-sm text-base-content/60 capitalize">{result.type}</div>
+                        <div className="font-medium text-base-content">
+                          {result.name}
+                        </div>
+                        <div className="text-sm text-base-content/60 capitalize">
+                          {result.type}
+                        </div>
                       </div>
                       <div className="badge badge-ghost badge-sm capitalize">
                         {result.type}

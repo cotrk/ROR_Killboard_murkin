@@ -7,6 +7,7 @@ import { ScenarioHeatmap } from '@/components/scenario/ScenarioHeatmap';
 import { ScenarioCount } from '@/components/scenario/ScenarioCount';
 import { ReactElement } from 'react';
 import { GetScenarioInfoQuery } from '@/__generated__/graphql';
+import { LoadingState } from '@/components/shared/LoadingState';
 
 const SCENARIO_INFO = gql`
   query GetScenarioInfo($id: ID!) {
@@ -17,22 +18,29 @@ const SCENARIO_INFO = gql`
 `;
 
 export function Scenario({
-  tab = 'scoreboard'
+  tab = 'scoreboard',
 }: {
   tab: 'scoreboard' | 'kills' | 'skirmishes' | 'map';
 }): ReactElement {
   const { t } = useTranslation(['common', 'pages', 'scenarios']);
   const { id } = useParams();
 
-  const { loading, error, data } = useQuery<GetScenarioInfoQuery>(SCENARIO_INFO, {
-    variables: { id },
-  });
+  const { loading, error, data } = useQuery<GetScenarioInfoQuery>(
+    SCENARIO_INFO,
+    {
+      variables: { id },
+    },
+  );
 
-  if (loading) return <div className="skeleton h-64"></div>;
-  if (error) return <div className="alert alert-error">Error loading scenario: {error.message}</div>;
-  if (!data?.scenario) return <div className="alert alert-info">Scenario not found</div>;
-
-  const scenario = data.scenario;
+  if (loading) return <LoadingState size="lg" className="py-12" />;
+  if (error)
+    return (
+      <div className="alert alert-error">
+        Error loading scenario: {error.message}
+      </div>
+    );
+  if (!data?.scenario)
+    return <div className="alert alert-info">Scenario not found</div>;
 
   return (
     <div className="container mx-auto max-w-7xl mt-2">
@@ -40,14 +48,16 @@ export function Scenario({
         <nav className="breadcrumbs text-sm">
           <ul>
             <li>
-              <Link to="/" className="link-hover link-primary">{t('common:home')}</Link>
+              <Link to="/" className="link-hover link-primary">
+                {t('common:home')}
+              </Link>
             </li>
             <li>
-              <Link to="/scenarios" className="link-hover link-primary">{t('common:scenarios')}</Link>
+              <Link to="/scenarios" className="link-hover link-primary">
+                {t('common:scenarios')}
+              </Link>
             </li>
-            <li className="text-base-content/60">
-              Scenario {id}
-            </li>
+            <li className="text-base-content/60">Scenario {id}</li>
           </ul>
         </nav>
       </div>
@@ -61,25 +71,25 @@ export function Scenario({
 
       {/* Navigation Tabs */}
       <div className="tabs tabs-boxed mb-6">
-        <Link 
+        <Link
           to={`/scenario/${id}`}
           className={`tab tab-lg ${tab === 'scoreboard' ? 'tab-active' : ''}`}
         >
           {t('scenarios:scoreboard')}
         </Link>
-        <Link 
+        <Link
           to={`/scenario/${id}/kills`}
           className={`tab tab-lg ${tab === 'kills' ? 'tab-active' : ''}`}
         >
           {t('scenarios:kills')}
         </Link>
-        <Link 
+        <Link
           to={`/scenario/${id}/skirmishes`}
           className={`tab tab-lg ${tab === 'skirmishes' ? 'tab-active' : ''}`}
         >
           {t('scenarios:skirmishes')}
         </Link>
-        <Link 
+        <Link
           to={`/scenario/${id}/map`}
           className={`tab tab-lg ${tab === 'map' ? 'tab-active' : ''}`}
         >
@@ -92,7 +102,9 @@ export function Scenario({
         <div className="card-body">
           {tab === 'scoreboard' && (
             <div>
-              <h3 className="text-lg font-bold mb-4">{t('scenarios:scoreboard')}</h3>
+              <h3 className="text-lg font-bold mb-4">
+                {t('scenarios:scoreboard')}
+              </h3>
               <ScenarioScoreboard entries={[]} />
             </div>
           )}
@@ -106,7 +118,9 @@ export function Scenario({
 
           {tab === 'skirmishes' && (
             <div>
-              <h3 className="text-lg font-bold mb-4">{t('scenarios:skirmishes')}</h3>
+              <h3 className="text-lg font-bold mb-4">
+                {t('scenarios:skirmishes')}
+              </h3>
               <div className="alert alert-info">
                 Skirmish data coming soon...
               </div>
@@ -125,7 +139,9 @@ export function Scenario({
       {/* Scenario Statistics */}
       <div className="card bg-base-100 shadow-xl mt-6">
         <div className="card-body">
-          <h3 className="text-lg font-bold mb-4">{t('scenarios:statistics')}</h3>
+          <h3 className="text-lg font-bold mb-4">
+            {t('scenarios:statistics')}
+          </h3>
           <ScenarioCount characterId="" guildId="" />
         </div>
       </div>

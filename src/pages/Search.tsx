@@ -4,15 +4,12 @@ import { Link, useParams } from 'react-router';
 import { CareerIcon } from '@/components/CareerIcon';
 import { SearchWithSuggestions } from '@/components/global/SearchWithSuggestions';
 import { LoadingState } from '@/components/shared/LoadingState';
-import { useDataQueryHandler } from '@/components/shared/ErrorBoundary';
-import useWindowDimensions from '@/hooks/useWindowDimensions';
+import { useDataQueryHandler } from '@/components/shared/QueryState';
 import { QueryPagination } from '@/components/global/QueryPagination';
 import { SearchQuery } from '../__generated__/graphql';
 import { GuildHeraldry } from '@/components/guild/GuildHeraldry';
-import { itemFigureClass, itemNameClass } from '../itemUtils';
 import { questTypeIcon } from '../utils';
 import { ReactElement } from 'react';
-import clsx from 'clsx';
 
 const SEARCH = gql`
   query Search(
@@ -103,12 +100,18 @@ export function Search(): ReactElement {
   const { loading, error, data, refetch } = useQuery<SearchQuery>(SEARCH, {
     variables: { query, first: perPage },
   });
-  const { width } = useWindowDimensions();
-  const isMobile = width <= 768;
 
   const { handleLoadingError } = useDataQueryHandler();
-  const errorElement = handleLoadingError(loading, error, data?.search?.nodes);
+  const errorElement = handleLoadingError(
+    loading,
+    error ?? null,
+    data?.search?.nodes,
+  );
   if (errorElement) return errorElement;
+
+  if (!data?.search?.nodes) {
+    return <LoadingState />;
+  }
 
   const { pageInfo } = data.search;
 
@@ -122,7 +125,9 @@ export function Search(): ReactElement {
         <nav className="breadcrumbs text-sm">
           <ul>
             <li>
-              <Link to="/" className="link-hover link-primary">{t('common:home')}</Link>
+              <Link to="/" className="link-hover link-primary">
+                {t('common:home')}
+              </Link>
             </li>
             <li className="text-base-content/60">
               {t('pages:searchPage.search')}
@@ -130,9 +135,13 @@ export function Search(): ReactElement {
           </ul>
         </nav>
       </div>
-      
-      <SearchWithSuggestions initialQuery={query} onSubmit={handleSubmit} isPlayer />
-      
+
+      <SearchWithSuggestions
+        initialQuery={query}
+        onSubmit={handleSubmit}
+        isPlayer
+      />
+
       <div className="overflow-x-auto">
         <table className="table table-zebra table-hover table-compact w-full">
           <thead>
@@ -152,7 +161,7 @@ export function Search(): ReactElement {
                       <CareerIcon career={searchItem.career} />
                     </td>
                     <td>
-                      <Link 
+                      <Link
                         to={`/character/${searchItem.id}`}
                         className="font-medium hover:text-primary transition-colors"
                       >
@@ -181,17 +190,27 @@ export function Search(): ReactElement {
               }
 
               if (searchItem.__typename === 'Guild') {
+                const heraldry = searchItem.heraldry
+                  ? {
+                      emblem: String(searchItem.heraldry.emblem),
+                      pattern: String(searchItem.heraldry.pattern),
+                      color1: String(searchItem.heraldry.color1),
+                      color2: String(searchItem.heraldry.color2),
+                      shape: String(searchItem.heraldry.shape),
+                    }
+                  : null;
+
                 return (
                   <tr key={searchItem.id} className="hover:bg-base-200">
                     <td>
                       <GuildHeraldry
-                        heraldry={searchItem.heraldry}
+                        heraldry={heraldry}
                         realm={searchItem.realm}
                         size="48"
                       />
                     </td>
                     <td>
-                      <Link 
+                      <Link
                         to={`/guild/${searchItem.id}`}
                         className="font-medium hover:text-primary transition-colors"
                       >
@@ -199,7 +218,7 @@ export function Search(): ReactElement {
                       </Link>
                       <div className="text-sm text-base-content/60 mt-1">
                         Leader:{' '}
-                        <Link 
+                        <Link
                           to={`/character/${searchItem.leader?.id}`}
                           className="hover:text-primary transition-colors"
                         >
@@ -226,16 +245,16 @@ export function Search(): ReactElement {
                     <td>
                       <Link to={`/item/${searchItem.id}`}>
                         <div className="w-12 h-12 m-0">
-                          <img 
-                            src={searchItem.iconUrl} 
-                            alt={searchItem.name} 
+                          <img
+                            src={searchItem.iconUrl}
+                            alt={searchItem.name}
                             className="w-full h-full object-contain"
                           />
                         </div>
                       </Link>
                     </td>
                     <td>
-                      <Link 
+                      <Link
                         to={`/item/${searchItem.id}`}
                         className="font-semibold hover:text-primary transition-colors"
                       >
@@ -278,7 +297,7 @@ export function Search(): ReactElement {
                       </Link>
                     </td>
                     <td>
-                      <Link 
+                      <Link
                         to={`/quest/${searchItem.id}`}
                         className="font-medium hover:text-primary transition-colors"
                       >
@@ -319,7 +338,7 @@ export function Search(): ReactElement {
                       </Link>
                     </td>
                     <td>
-                      <Link 
+                      <Link
                         to={`/creature/${searchItem.id}`}
                         className="font-medium hover:text-primary transition-colors"
                       >
@@ -357,7 +376,7 @@ export function Search(): ReactElement {
                       </Link>
                     </td>
                     <td>
-                      <Link 
+                      <Link
                         to={`/chapter/${searchItem.id}`}
                         className="font-medium hover:text-primary transition-colors"
                       >

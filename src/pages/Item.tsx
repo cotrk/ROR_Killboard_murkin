@@ -4,6 +4,7 @@ import { gql, useQuery } from '@apollo/client';
 import { ItemQuests } from '@/components/item/ItemQuests';
 import { ItemVendorsPurchase } from '@/components/item/ItemVendorsPurchase';
 import { ItemVendorsSell } from '@/components/item/ItemVendorsSell';
+import { LoadingState } from '@/components/shared/LoadingState';
 import { ReactElement } from 'react';
 import { GetItemInfoQuery } from '@/__generated__/graphql';
 
@@ -43,7 +44,7 @@ const ITEM_INFO = gql`
 `;
 
 export function Item({
-  tab = 'vendors'
+  tab = 'vendors',
 }: {
   tab: 'vendors' | 'purchase' | 'quests';
 }): ReactElement {
@@ -54,20 +55,32 @@ export function Item({
     variables: { id },
   });
 
-  if (loading) return <div className="skeleton h-64"></div>;
-  if (error) return <div className="alert alert-error">Error loading item: {error.message}</div>;
-  if (!data?.item) return <div className="alert alert-info">Item not found</div>;
+  if (loading) return <LoadingState size="lg" className="py-12" />;
+  if (error)
+    return (
+      <div className="alert alert-error">
+        Error loading item: {error.message}
+      </div>
+    );
+  if (!data?.item)
+    return <div className="alert alert-info">Item not found</div>;
 
   const item = data.item;
 
   const getRarityColor = (rarity: string) => {
     switch (rarity?.toLowerCase()) {
-      case 'common': return 'text-base-content';
-      case 'uncommon': return 'text-success';
-      case 'rare': return 'text-info';
-      case 'epic': return 'text-warning';
-      case 'legendary': return 'text-error';
-      default: return 'text-base-content';
+      case 'common':
+        return 'text-base-content';
+      case 'uncommon':
+        return 'text-success';
+      case 'rare':
+        return 'text-info';
+      case 'epic':
+        return 'text-warning';
+      case 'legendary':
+        return 'text-error';
+      default:
+        return 'text-base-content';
     }
   };
 
@@ -77,14 +90,16 @@ export function Item({
         <nav className="breadcrumbs text-sm">
           <ul>
             <li>
-              <Link to="/" className="link-hover link-primary">{t('common:home')}</Link>
+              <Link to="/" className="link-hover link-primary">
+                {t('common:home')}
+              </Link>
             </li>
             <li>
-              <Link to="/items" className="link-hover link-primary">{t('common:items')}</Link>
+              <Link to="/items" className="link-hover link-primary">
+                {t('common:items')}
+              </Link>
             </li>
-            <li className="text-base-content/60">
-              {item.name}
-            </li>
+            <li className="text-base-content/60">{item.name}</li>
           </ul>
         </nav>
       </div>
@@ -98,8 +113,8 @@ export function Item({
               <div className="avatar">
                 <div className="w-24 h-24 rounded-lg bg-base-200 flex items-center justify-center">
                   {item.iconUrl ? (
-                    <img 
-                      src={item.iconUrl} 
+                    <img
+                      src={item.iconUrl}
                       alt={item.name}
                       className="w-full h-full object-cover rounded-lg"
                     />
@@ -112,14 +127,14 @@ export function Item({
 
             {/* Item Details */}
             <div className="flex-1">
-              <h2 className={`card-title text-2xl mb-2 ${getRarityColor(item.rarity || '')}`}>
+              <h2
+                className={`card-title text-2xl mb-2 ${getRarityColor(item.rarity || '')}`}
+              >
                 {item.name}
               </h2>
-              
+
               {item.rarity && (
-                <div className="badge badge-outline mb-2">
-                  {item.rarity}
-                </div>
+                <div className="badge badge-outline mb-2">{item.rarity}</div>
               )}
 
               {item.itemLevel && (
@@ -158,9 +173,14 @@ export function Item({
               <h3 className="text-lg font-bold mb-4">Stats</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                 {item.stats.map((stat, index) => (
-                  <div key={index} className="flex justify-between p-2 bg-base-200 rounded">
+                  <div
+                    key={index}
+                    className="flex justify-between p-2 bg-base-200 rounded"
+                  >
                     <span className="font-medium">{stat.stat}</span>
-                    <span className="text-success font-bold">+{stat.value}</span>
+                    <span className="text-success font-bold">
+                      +{stat.value}
+                    </span>
                   </div>
                 ))}
               </div>
@@ -175,35 +195,35 @@ export function Item({
                 <div className="stat-value text-sm">{item.type}</div>
               </div>
             )}
-            
+
             {item.slot && (
               <div className="stat">
                 <div className="stat-title">Slot</div>
                 <div className="stat-value text-sm">{item.slot}</div>
               </div>
             )}
-            
+
             {item.armor && (
               <div className="stat">
                 <div className="stat-title">Armor</div>
                 <div className="stat-value text-sm">{item.armor}</div>
               </div>
             )}
-            
+
             {item.dps && (
               <div className="stat">
                 <div className="stat-title">DPS</div>
                 <div className="stat-value text-sm">{item.dps}</div>
               </div>
             )}
-            
+
             {item.speed && (
               <div className="stat">
                 <div className="stat-title">Speed</div>
                 <div className="stat-value text-sm">{item.speed}</div>
               </div>
             )}
-            
+
             {item.talismanSlots && (
               <div className="stat">
                 <div className="stat-title">Talisman Slots</div>
@@ -215,7 +235,9 @@ export function Item({
           {/* Item Set */}
           {item.itemSet && (
             <div className="mt-6">
-              <h3 className="text-lg font-bold mb-4">Item Set: {item.itemSet.name}</h3>
+              <h3 className="text-lg font-bold mb-4">
+                Item Set: {item.itemSet.name}
+              </h3>
               <div className="card bg-base-200">
                 <div className="card-body p-4">
                   <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
@@ -224,8 +246,8 @@ export function Item({
                         <div className="avatar mb-2">
                           <div className="w-12 h-12 rounded bg-base-300 flex items-center justify-center">
                             {setItem.iconUrl ? (
-                              <img 
-                                src={setItem.iconUrl} 
+                              <img
+                                src={setItem.iconUrl}
                                 alt={setItem.name}
                                 className="w-full h-full object-cover rounded"
                               />
@@ -247,19 +269,19 @@ export function Item({
 
       {/* Navigation Tabs */}
       <div className="tabs tabs-boxed mb-6">
-        <Link 
+        <Link
           to={`/item/${id}`}
           className={`tab tab-lg ${tab === 'vendors' ? 'tab-active' : ''}`}
         >
           {t('items:vendors')}
         </Link>
-        <Link 
+        <Link
           to={`/item/${id}/purchase`}
           className={`tab tab-lg ${tab === 'purchase' ? 'tab-active' : ''}`}
         >
           {t('items:purchase')}
         </Link>
-        <Link 
+        <Link
           to={`/item/${id}/quests`}
           className={`tab tab-lg ${tab === 'quests' ? 'tab-active' : ''}`}
         >

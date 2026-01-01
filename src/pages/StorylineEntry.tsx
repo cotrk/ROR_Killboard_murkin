@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router';
 import { gql, useQuery } from '@apollo/client';
 import { ReactElement } from 'react';
 import { GetWarJournalEntryQuery } from '@/__generated__/graphql';
+import { LoadingState } from '@/components/shared/LoadingState';
 
 const WAR_JOURNAL_ENTRY_DETAILS = gql`
   query GetWarJournalEntry($id: ID!) {
@@ -48,13 +49,22 @@ export function StorylineEntry(): ReactElement {
   const { t } = useTranslation(['common', 'pages', 'storylines']);
   const { id } = useParams();
 
-  const { loading, error, data } = useQuery<GetWarJournalEntryQuery>(WAR_JOURNAL_ENTRY_DETAILS, {
-    variables: { id },
-  });
+  const { loading, error, data } = useQuery<GetWarJournalEntryQuery>(
+    WAR_JOURNAL_ENTRY_DETAILS,
+    {
+      variables: { id },
+    },
+  );
 
-  if (loading) return <div className="skeleton h-64"></div>;
-  if (error) return <div className="alert alert-error">Error loading story entry: {error.message}</div>;
-  if (!data?.warJournalEntry) return <div className="alert alert-info">Story entry not found</div>;
+  if (loading) return <LoadingState size="lg" className="py-12" />;
+  if (error)
+    return (
+      <div className="alert alert-error">
+        Error loading story entry: {error.message}
+      </div>
+    );
+  if (!data?.warJournalEntry)
+    return <div className="alert alert-info">Story entry not found</div>;
 
   const entry = data.warJournalEntry;
 
@@ -64,14 +74,16 @@ export function StorylineEntry(): ReactElement {
         <nav className="breadcrumbs text-sm">
           <ul>
             <li>
-              <Link to="/" className="link-hover link-primary">{t('common:home')}</Link>
+              <Link to="/" className="link-hover link-primary">
+                {t('common:home')}
+              </Link>
             </li>
             <li>
-              <Link to="/storylines" className="link-hover link-primary">{t('common:storylines')}</Link>
+              <Link to="/storylines" className="link-hover link-primary">
+                {t('common:storylines')}
+              </Link>
             </li>
-            <li className="text-base-content/60">
-              {entry.title}
-            </li>
+            <li className="text-base-content/60">{entry.title}</li>
           </ul>
         </nav>
       </div>
@@ -80,7 +92,7 @@ export function StorylineEntry(): ReactElement {
       <div className="card bg-base-100 shadow-xl mb-6">
         <div className="card-body">
           <h2 className="card-title text-2xl mb-4">{entry.title}</h2>
-          
+
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Entry Details */}
             <div className="space-y-4">
@@ -88,12 +100,12 @@ export function StorylineEntry(): ReactElement {
                 <div className="stat-title">Location</div>
                 <div className="stat-value">{entry.locationText}</div>
               </div>
-              
+
               <div className="stat">
                 <div className="stat-title">NPC</div>
                 <div className="stat-value">{entry.npcName}</div>
               </div>
-              
+
               <div className="stat">
                 <div className="stat-title">Type</div>
                 <div className="stat-value">
@@ -104,12 +116,12 @@ export function StorylineEntry(): ReactElement {
                   )}
                 </div>
               </div>
-              
+
               <div className="stat">
                 <div className="stat-title">Area</div>
                 <div className="stat-value">{entry.area?.name}</div>
               </div>
-              
+
               <div className="stat">
                 <div className="stat-title">Zone</div>
                 <div className="stat-value">{entry.zone?.name}</div>
@@ -128,7 +140,9 @@ export function StorylineEntry(): ReactElement {
           {/* Entry Text */}
           <div className="divider"></div>
           <div className="prose max-w-none">
-            <p className="text-base-content/80 whitespace-pre-wrap">{entry.text}</p>
+            <p className="text-base-content/80 whitespace-pre-wrap">
+              {entry.text}
+            </p>
           </div>
         </div>
       </div>
@@ -137,18 +151,12 @@ export function StorylineEntry(): ReactElement {
       <div className="card bg-base-100 shadow-xl">
         <div className="card-body">
           <div className="flex gap-4">
-            <Link 
-              to={`/storylines`}
-              className="btn btn-outline"
-            >
+            <Link to={`/storylines`} className="btn btn-outline">
               Back to Storylines
             </Link>
-            
+
             {entry.zone && (
-              <Link 
-                to={`/zone/${entry.zone.id}`}
-                className="btn btn-primary"
-              >
+              <Link to={`/zone/${entry.zone.id}`} className="btn btn-primary">
                 View Zone
               </Link>
             )}

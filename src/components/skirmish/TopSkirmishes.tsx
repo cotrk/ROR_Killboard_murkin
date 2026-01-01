@@ -5,6 +5,7 @@ import { Query } from '@/__generated__/graphql';
 import { ErrorMessage } from '@/components/global/ErrorMessage';
 import { SkirmishListTable } from '@/components/skirmish/SkirmishListTable';
 import { ReactElement } from 'react';
+import { LoadingState } from '@/components/shared/LoadingState';
 
 const TOP_SKIRMISHES = gql`
   query GetTopSkirmishes {
@@ -59,7 +60,7 @@ export function TopSkirmishes(): ReactElement {
         <h3 className="text-lg font-bold uppercase mb-4">
           {t('topSkirmishes.title')}
         </h3>
-        <div className="flex justify-center py-4"><span className="loading loading-spinner loading-md"></span></div>
+        <LoadingState size="md" className="py-4" />
       </div>
     );
 
@@ -78,7 +79,8 @@ export function TopSkirmishes(): ReactElement {
     (s) => s.id,
   );
 
-  if (skirmishes == null) return <p className="text-center py-4">{t('common:error')}</p>;
+  if (skirmishes == null)
+    return <p className="text-center py-4">{t('common:error')}</p>;
 
   return (
     <div className="mb-3">

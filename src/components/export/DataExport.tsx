@@ -2,39 +2,48 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 
 interface DataExportProps {
-  data: any[];
+  data: Record<string, unknown>[];
   filename?: string;
   title?: string;
 }
 
-export const DataExport: React.FC<DataExportProps> = ({ 
-  data, 
+export const DataExport: React.FC<DataExportProps> = ({
+  data,
   filename = 'killboard-data',
-  title = 'Export Data'
+  title = 'Export Data',
 }) => {
-  const { t } = useTranslation('components');
+  useTranslation('components');
 
-  const convertToCSV = (data: any[]): string => {
+  const convertToCSV = (data: Record<string, unknown>[]): string => {
     if (!data || data.length === 0) return '';
 
     const headers = Object.keys(data[0]);
     const csvHeaders = headers.join(',');
-    
-    const csvRows = data.map(row => {
-      return headers.map(header => {
-        const value = row[header];
-        // Handle values that contain commas or quotes
-        if (typeof value === 'string' && (value.includes(',') || value.includes('"'))) {
-          return `"${value.replace(/"/g, '""')}"`;
-        }
-        return value;
-      }).join(',');
+
+    const csvRows = data.map((row) => {
+      return headers
+        .map((header) => {
+          const value = row[header];
+          // Handle values that contain commas or quotes
+          if (
+            typeof value === 'string' &&
+            (value.includes(',') || value.includes('"'))
+          ) {
+            return `"${value.replace(/"/g, '""')}"`;
+          }
+          return String(value ?? '');
+        })
+        .join(',');
     });
 
     return [csvHeaders, ...csvRows].join('\n');
   };
 
-  const downloadFile = (content: string, filename: string, mimeType: string) => {
+  const downloadFile = (
+    content: string,
+    filename: string,
+    mimeType: string,
+  ) => {
     const blob = new Blob([content], { type: mimeType });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
@@ -81,15 +90,23 @@ export const DataExport: React.FC<DataExportProps> = ({
         <table>
           <thead>
             <tr>
-              ${Object.keys(data[0] || {}).map(key => `<th>${key}</th>`).join('')}
+              ${Object.keys(data[0] || {})
+                .map((key) => `<th>${key}</th>`)
+                .join('')}
             </tr>
           </thead>
           <tbody>
-            ${data.map(row => `
+            ${data
+              .map(
+                (row) => `
               <tr>
-                ${Object.values(row).map(value => `<td>${value}</td>`).join('')}
+                ${Object.values(row)
+                  .map((value) => `<td>${value}</td>`)
+                  .join('')}
               </tr>
-            `).join('')}
+            `,
+              )
+              .join('')}
           </tbody>
         </table>
       </body>
@@ -114,8 +131,8 @@ export const DataExport: React.FC<DataExportProps> = ({
 
   if (!data || data.length === 0) {
     return (
-      <div className="notification is-warning">
-        No data available to export
+      <div className="alert alert-warning">
+        <span>No data available to export</span>
       </div>
     );
   }
@@ -123,64 +140,52 @@ export const DataExport: React.FC<DataExportProps> = ({
   return (
     <div className="data-export">
       <div className="card">
-        <div className="card-content">
-          <h4 className="title is-6 mb-4">{title}</h4>
-          
-          <div className="field is-grouped">
-            <p className="control">
-              <button 
-                className="button is-primary"
-                onClick={exportToCSV}
-                title="Export as CSV file"
-              >
-                <span className="icon">
-                  <i className="fas fa-file-csv"></i>
-                </span>
-                <span>CSV</span>
-              </button>
-            </p>
-            
-            <p className="control">
-              <button 
-                className="button is-info"
-                onClick={exportToJSON}
-                title="Export as JSON file"
-              >
-                <span className="icon">
-                  <i className="fas fa-file-code"></i>
-                </span>
-                <span>JSON</span>
-              </button>
-            </p>
-            
-            <p className="control">
-              <button 
-                className="button is-link"
-                onClick={exportToPDF}
-                title="Export as PDF (opens print dialog)"
-              >
-                <span className="icon">
-                  <i className="fas fa-file-pdf"></i>
-                </span>
-                <span>PDF</span>
-              </button>
-            </p>
-            
-            <p className="control">
-              <button 
-                className="button is-light"
-                onClick={copyToClipboard}
-                title="Copy data to clipboard"
-              >
-                <span className="icon">
-                  <i className="fas fa-copy"></i>
-                </span>
-                <span>Copy</span>
-              </button>
-            </p>
+        <div className="card-body">
+          <h4 className="card-title text-base">{title}</h4>
+
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              className="btn btn-primary"
+              onClick={exportToCSV}
+              title="Export as CSV file"
+            >
+              <i className="fas fa-file-csv" aria-hidden="true"></i>
+              <span>CSV</span>
+            </button>
+
+            <button
+              type="button"
+              className="btn btn-info"
+              onClick={exportToJSON}
+              title="Export as JSON file"
+            >
+              <i className="fas fa-file-code" aria-hidden="true"></i>
+              <span>JSON</span>
+            </button>
+
+            <button
+              type="button"
+              className="btn btn-secondary"
+              onClick={exportToPDF}
+              title="Export as PDF (opens print dialog)"
+            >
+              <i className="fas fa-file-pdf" aria-hidden="true"></i>
+              <span>PDF</span>
+            </button>
+
+            <button
+              type="button"
+              className="btn btn-ghost"
+              onClick={copyToClipboard}
+              title="Copy data to clipboard"
+            >
+              <i className="fas fa-copy" aria-hidden="true"></i>
+              <span>Copy</span>
+            </button>
           </div>
-          
-          <div className="has-text-grey is-size-7 mt-2">
+
+          <div className="text-base-content/60 text-xs">
             {data.length} records available for export
           </div>
         </div>

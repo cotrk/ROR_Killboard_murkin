@@ -1,6 +1,7 @@
 import { gql, useQuery } from '@apollo/client';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
+import { LoadingState } from '@/components/shared/LoadingState';
 import { ReactElement } from 'react';
 import { Query } from '@/__generated__/graphql';
 
@@ -25,10 +26,16 @@ export function CharacterInfo({ id }: { id: number }): ReactElement {
     variables: { id },
   });
 
-  if (loading) return <div className="skeleton h-64"></div>;
-  if (error) return <div className="alert alert-error">Error loading character: {error.message}</div>;
+  if (loading) return <LoadingState size="lg" className="py-12" />;
+  if (error)
+    return (
+      <div className="alert alert-error">
+        Error loading character: {error.message}
+      </div>
+    );
 
-  if (!data?.character) return <div className="alert alert-info">Character not found</div>;
+  if (!data?.character)
+    return <div className="alert alert-info">Character not found</div>;
 
   const character = data.character;
 
@@ -38,14 +45,16 @@ export function CharacterInfo({ id }: { id: number }): ReactElement {
         <nav className="breadcrumbs text-sm">
           <ul>
             <li>
-              <Link to="/" className="link-hover link-primary">{t('common:home')}</Link>
+              <Link to="/" className="link-hover link-primary">
+                {t('common:home')}
+              </Link>
             </li>
             <li>
-              <Link to={`/character/${id}`} className="link-hover link-primary">{t('common:character')}</Link>
+              <Link to={`/character/${id}`} className="link-hover link-primary">
+                {t('common:character')}
+              </Link>
             </li>
-            <li className="text-base-content/60">
-              {character.name}
-            </li>
+            <li className="text-base-content/60">{character.name}</li>
           </ul>
         </nav>
       </div>
@@ -64,18 +73,18 @@ export function CharacterInfo({ id }: { id: number }): ReactElement {
             {/* Character Details */}
             <div className="flex-1 min-w-0">
               <h2 className="card-title text-2xl mb-4">{character.name}</h2>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="stat">
                   <div className="stat-title">Career</div>
                   <div className="stat-value">{character.career}</div>
                 </div>
-                
+
                 {character.guildMembership?.guild && (
                   <div className="stat">
                     <div className="stat-title">Guild</div>
                     <div className="stat-value">
-                      <Link 
+                      <Link
                         to={`/guild/${character.guildMembership.guild.id}`}
                         className="link-hover link-primary"
                       >
@@ -94,17 +103,11 @@ export function CharacterInfo({ id }: { id: number }): ReactElement {
       <div className="card bg-base-100 shadow-xl">
         <div className="card-body">
           <div className="flex gap-4">
-            <Link 
-              to={`/character/${id}/kills`}
-              className="btn btn-outline"
-            >
+            <Link to={`/character/${id}/kills`} className="btn btn-outline">
               View Kills
             </Link>
-            
-            <Link 
-              to={`/character/${id}/deaths`}
-              className="btn btn-outline"
-            >
+
+            <Link to={`/character/${id}/deaths`} className="btn btn-outline">
               View Deaths
             </Link>
           </div>

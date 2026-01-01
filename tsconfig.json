@@ -19,6 +19,6 @@
       "@/*": ["./src/*"]
     }
   },
-  "include": ["src", "@types"],
+  "include": ["src", "@types", "_ARCHIVE"],
   "exclude": ["/apollo.config.cjs"]
 }

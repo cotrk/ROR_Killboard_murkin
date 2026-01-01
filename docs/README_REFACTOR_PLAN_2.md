@@ -1,8 +1,83 @@
+# Session Results / Notes / Issues (Latest)
+
+## Completed work
+
+- **Archive moved out of `src/`**
+  - `src/_ARCHIVE` has already been moved to repo root (kept out of the shipped app).
+
+- **Phase 1: Bulma eradication (targeted files)**
+  - `src/components/global/AppErrorBoundary.tsx` converted from Bulma to DaisyUI/Tailwind.
+  - `src/components/charts/KillChart.tsx` converted from Bulma to DaisyUI/Tailwind.
+  - `src/components/export/DataExport.tsx` converted from Bulma to DaisyUI/Tailwind.
+
+- **Phase 2: Error boundary consolidation (in progress, but stabilized)**
+  - `src/services/errorReporting.ts` now uses `react-error-boundary` for `withErrorBoundary` and no longer imports the custom class-based boundary.
+  - `src/components/shared/ErrorBoundary.tsx` was renamed to `src/components/shared/QueryState.tsx` (it is not a React error boundary).
+  - `src/pages/Search.tsx` was updated to use the new `QueryState` import and tightened for TypeScript + lint.
+
+## Phase 2 (Crystal Clear)
+
+### What Phase 2 is trying to do
+
+- **Goal**: Have _one_ consistent error-boundary approach across the app.
+- **Standard**: `react-error-boundary`.
+- **Why**: It prevents React crashes from blanking the whole page, and it gives us one predictable place to handle/report errors.
+
+### What “stabilized” means
+
+- **Build-safe**: TypeScript parses/compiles cleanly.
+- **Lint-safe**: eslint passes for the touched files.
+- **Consistency direction is set**: we’re not mixing multiple different “ErrorBoundary” systems in active code anymore.
+
+### What’s done
+
+- **`errorReporting.ts` standardized**
+  - `withErrorBoundary` now uses `react-error-boundary`.
+  - It no longer imports the old class-based boundary.
+
+- **Misleading helper name fixed**
+  - `src/components/shared/ErrorBoundary.tsx` is now `src/components/shared/QueryState.tsx`.
+  - This file is _not_ an error boundary; it’s query loading/error UI helpers.
+
+- **Legacy boundary moved out of active `src/`**
+  - `src/components/error/ErrorBoundary.tsx` was moved to:
+    - `_ARCHIVE/_temp_hold/components/error/ErrorBoundary.tsx`
+
+### What’s left (to mark Phase 2 complete)
+
+- ✅ **Rename confusing exports in `QueryState.tsx`**
+  - `ErrorBoundary` (UI alert) → `ErrorAlert`
+  - `DataValidator` → `NullDataAlert`
+- ✅ **Update docs references below** so they point to the new file names/locations.
+
+### Phase 2 status
+
+- **Complete** ✅
+
+## Decisions
+
+- **Keep legacy error boundary code in archive (not active runtime code)**
+  - `src/components/error/ErrorBoundary.tsx` had no remaining imports. It has been moved to:
+    - `_ARCHIVE/_temp_hold/components/error/ErrorBoundary.tsx`
+
+## Current issues / watchouts
+
+- **Docs drift**
+  - The content below includes older notes that reference the pre-refactor state (e.g. “Bulma still exists” in files that have since been fixed). Treat it as historical context.
+
+- **Phase 2 still not 100% finished**
+  - The misnamed shared “ErrorBoundary” helper is renamed, and `errorReporting.ts` is standardized.
+  - Remaining cleanup is to decide whether to permanently delete archived legacy files (later), and ensure no new boundary variants get introduced.
+
+---
+
+## Refactor Plan (Original Notes / Plan)
+
 Got it. I’ll (1) read `README_REFRACTORING_PLAN.md` + `README.md` to understand intended architecture, (2) scan the repo for duplicate/archived components and dead code paths, then (3) propose a tight refactor/removal list (what to delete, what to merge, and what imports/routes need updating). Since I’m in **Ask mode**, I’ll give you exact file/folder deletions and patch-style guidance for you to apply (or you can switch to **Code mode** and I can do it). I’m going to start by reading the two READMEs and mapping the codebase hotspots.
 
 You’re right — my last `grep_search` used a regex with bad escape sequences. I’ll re-run those searches using **literal string matching** (`FixedStrings: true`) so it can’t choke on the quotes/escapes, then I’ll continue the repo scan for the biggest redundancy targets ([\_ARCHIVE](cci:7://file:///d:/Workshop/Dev/Github/Clones/killboard/src/_ARCHIVE:0:0-0:0), duplicate error boundaries, leftover Bulma classes, and repeated loading/error patterns).
 
-# Findings (what’s actually redundant right now)
+## Findings (what’s actually redundant right now)
 
 ## 1) [src/\_ARCHIVE/](cci:7://file:///d:/Workshop/Dev/Github/Clones/killboard/src/_ARCHIVE:0:0-0:0) is huge and not referenced by runtime code
 
@@ -24,13 +99,13 @@ This is real duplication and it’s confusing:
   - Still contains **Bulma** classes (`container is-fluid`, `notification is-danger`, `button is-danger`, etc.)
   - **Used by [src/index.tsx](cci:7://file:///d:/Workshop/Dev/Github/Clones/killboard/src/index.tsx:0:0-0:0)** (so this is the “real” global boundary right now)
 
-- **[src/components/error/ErrorBoundary.tsx](cci:7://file:///d:/Workshop/Dev/Github/Clones/killboard/src/components/error/ErrorBoundary.tsx:0:0-0:0)**
+- **[src/components/error/ErrorBoundary.tsx](cci:7://file:///d:/Workshop/Dev/Github/Clones/killboard/src/components/error/ErrorBoundary.tsx:0:0-0:0)** _(historical; moved to `_ARCHIVE/_temp_hold/components/error/ErrorBoundary.tsx`)_
   - A **class-based** boundary (custom)
   - Used by [src/services/errorReporting.ts](cci:7://file:///d:/Workshop/Dev/Github/Clones/killboard/src/services/errorReporting.ts:0:0-0:0) in the [withErrorBoundary](cci:1://file:///d:/Workshop/Dev/Github/Clones/killboard/src/services/errorReporting.ts:85:0-104:2) HOC
   - Has a bunch of reporting logic + TODOs
 
-- **[src/components/shared/ErrorBoundary.tsx](cci:7://file:///d:/Workshop/Dev/Github/Clones/killboard/src/components/shared/ErrorBoundary.tsx:0:0-0:0)**
-  - Not a React error boundary; it’s an **error UI component + helper hook** ([useDataQueryHandler](cci:1://file:///d:/Workshop/Dev/Github/Clones/killboard/src/components/shared/ErrorBoundary.tsx:68:0-80:2))
+- **[src/components/shared/ErrorBoundary.tsx](cci:7://file:///d:/Workshop/Dev/Github/Clones/killboard/src/components/shared/ErrorBoundary.tsx:0:0-0:0)** _(historical; renamed to `src/components/shared/QueryState.tsx`)_
+  - Not a React error boundary; it’s an **error UI component + helper hook** (now in `src/components/shared/QueryState.tsx`)
   - Name overlaps with the other two, causing mental overhead
 
 ### Recommended action (minimal-risk, cleanest)
@@ -105,7 +180,7 @@ You have:
 - Then update imports like `import { questTypeIcon } from '../utils';`
 - This avoids the “is utils a file or folder?” confusion.
 
-# Concrete cleanup plan (safe order)
+## Concrete cleanup plan (safe order)
 
 ## Step 1 — Remove/move archive code
 
@@ -129,7 +204,7 @@ You have:
 
 Replace inline spinners with shared components.
 
-# Verification (don’t skip)
+## Verification (don’t skip)
 
 Run:
 
@@ -142,7 +217,7 @@ Run:
    - one export flow (if still used)
    - trigger an error boundary (temporarily throw in a component, or simulate a render error)
 
-# One question (so I don’t guess wrong)
+## One question (so I don’t guess wrong)
 
 Do you want to **delete** [src/\_ARCHIVE/](cci:7://file:///d:/Workshop/Dev/Github/Clones/killboard/src/_ARCHIVE:0:0-0:0) outright, or **keep it but move it out of [src/](cci:7://file:///d:/Workshop/Dev/Github/Clones/killboard/src:0:0-0:0)** (recommended for reference)?
 

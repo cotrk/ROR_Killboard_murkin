@@ -6,6 +6,7 @@ import { ErrorMessage } from '@/components/global/ErrorMessage';
 import { getScenarioFilters } from '@/components/scenario/ScenarioFilters';
 import { ScenarioListTable } from '@/components/scenario/ScenarioListTable';
 import { QueryPagination } from '@/components/global/QueryPagination';
+import { LoadingState } from '@/components/shared/LoadingState';
 
 const SCENARIO_LIST = gql`
   query GetScenarioList(
@@ -71,7 +72,7 @@ export function ScenarioList({
     },
   });
 
-  if (loading) return <div className="flex justify-center py-4"><span className="loading loading-spinner loading-md"></span></div>;
+  if (loading) return <LoadingState size="md" />;
   if (error) return <ErrorMessage name={error.name} message={error.message} />;
   if (data?.scenarios?.nodes == null)
     return <ErrorMessage customText={t('common:notFound')} />;

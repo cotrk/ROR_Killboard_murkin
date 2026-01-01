@@ -2,7 +2,7 @@ import { gql, useQuery } from '@apollo/client';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router';
 import { Query } from '@/__generated__/graphql';
-import { LoadingState } from '@/components/shared/LoadingState';
+import { LoadingStateInline } from '@/components/shared/LoadingState';
 import { getScenarioFilters } from '@/components/scenario/ScenarioFilters';
 
 const SCENARIO_COUNT = gql`
@@ -45,8 +45,18 @@ export function ScenarioCount({
 
   const count = data?.scenarios?.totalCount || 0;
 
-  if (loading) return <div className="skeleton h-8 w-32"></div>;
-  if (error) return <div className="alert alert-error">Error loading scenario count: {error.message}</div>;
+  if (loading)
+    return (
+      <div className="flex justify-center py-2">
+        <LoadingStateInline size="sm" />
+      </div>
+    );
+  if (error)
+    return (
+      <div className="alert alert-error">
+        Error loading scenario count: {error.message}
+      </div>
+    );
 
   return (
     <div className="stat bg-base-100 shadow-xl">
@@ -54,9 +64,7 @@ export function ScenarioCount({
         <div className="stat-value text-3xl font-bold">
           {count.toLocaleString()}
         </div>
-        <div className="stat-title">
-          {t('scenarios:totalScenarios')}
-        </div>
+        <div className="stat-title">{t('scenarios:totalScenarios')}</div>
       </div>
     </div>
   );

@@ -115,8 +115,14 @@ export function Items(): ReactElement {
   const isMobile = width <= 768;
 
   if (loading) return <LoadingState />;
-  if (error) return <div className="alert alert-error">Error loading items: {error.message}</div>;
-  if (data?.items?.nodes == null) return <div className="alert alert-info">No items found</div>;
+  if (error)
+    return (
+      <div className="alert alert-error">
+        Error loading items: {error.message}
+      </div>
+    );
+  if (data?.items?.nodes == null)
+    return <div className="alert alert-info">No items found</div>;
 
   const entries = data.items.nodes;
   const { pageInfo } = data.items;
@@ -127,15 +133,17 @@ export function Items(): ReactElement {
         <nav className="breadcrumbs text-sm">
           <ul>
             <li>
-              <Link to="/" className="link-hover link-primary">{t('common:home')}</Link>
+              <Link to="/" className="link-hover link-primary">
+                {t('common:home')}
+              </Link>
             </li>
-            <li className="text-base-content/60">
+            <li className="text-base-content opacity-60">
               {t('pages:items.title')}
             </li>
           </ul>
         </nav>
       </div>
-      
+
       <div className="card bg-base-100 shadow-xl mb-6">
         <div className="card-body">
           <div className="form-control">
@@ -148,7 +156,7 @@ export function Items(): ReactElement {
               }}
             />
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="form-control">
               <label className="label" htmlFor="type">
@@ -161,211 +169,195 @@ export function Items(): ReactElement {
                 onChange={(event) => {
                   search.set('type', event.target.value);
                   setSearch(search);
-                  }}
-                >
-                  <option value="all">{t('pages:items.all')}</option>
-                  <option value="SWORD">{t('enums:itemType.SWORD')}</option>
-                  <option value="AXE">{t('enums:itemType.AXE')}</option>
-                  <option value="HAMMER">{t('enums:itemType.HAMMER')}</option>
-                  <option value="BASIC_SHIELD">
-                    {t('enums:itemType.BASIC_SHIELD')}
-                  </option>
-                  <option value="SHIELD">{t('enums:itemType.SHIELD')}</option>
-                  <option value="ROBE">{t('enums:itemType.ROBE')}</option>
-                  <option value="BOW">{t('enums:itemType.BOW')}</option>
-                  <option value="CROSSBOW">
-                    {t('enums:itemType.CROSSBOW')}
-                  </option>
-                  <option value="GUN">{t('enums:itemType.GUN')}</option>
-                  <option value="EXPERT_SHIELD">
-                    {t('enums:itemType.EXPERT_SHIELD')}
-                  </option>
-                  <option value="STAFF">{t('enums:itemType.STAFF')}</option>
-                  <option value="DAGGER">{t('enums:itemType.DAGGER')}</option>
-                  <option value="SPEAR">{t('enums:itemType.SPEAR')}</option>
-                  <option value="PISTOL">{t('enums:itemType.PISTOL')}</option>
-                  <option value="LANCE">{t('enums:itemType.LANCE')}</option>
-                  <option value="REPEATING_CROSSBOW">
-                    {t('enums:itemType.REPEATING_CROSSBOW')}
-                  </option>
-                  <option value="LIGHT_ARMOR">
-                    {t('enums:itemType.LIGHT_ARMOR')}
-                  </option>
-                  <option value="MEDIUM_ARMOR">
-                    {t('enums:itemType.MEDIUM_ARMOR')}
-                  </option>
-                  <option value="HEAVY_ARMOR">
-                    {t('enums:itemType.HEAVY_ARMOR')}
-                  </option>
-                  <option value="QUEST">{t('enums:itemType.QUEST')}</option>
-                  <option value="MEDIUM_ROBE">
-                    {t('enums:itemType.MEDIUM_ROBE')}
-                  </option>
-                  <option value="ENHANCEMENT">
-                    {t('enums:itemType.ENHANCEMENT')}
-                  </option>
-                  <option value="TROPHY">{t('enums:itemType.TROPHY')}</option>
-                  <option value="CHARM">{t('enums:itemType.CHARM')}</option>
-                  <option value="DYE">{t('enums:itemType.DYE')}</option>
-                  <option value="BASIC_MOUNT">
-                    {t('enums:itemType.BASIC_MOUNT')}
-                  </option>
-                  <option value="ADVANCED_MOUNT">
-                    {t('enums:itemType.ADVANCED_MOUNT')}
-                  </option>
-                  <option value="POTION">{t('enums:itemType.POTION')}</option>
-                  <option value="SALVAGING">
-                    {t('enums:itemType.SALVAGING')}
-                  </option>
-                  <option value="MARKETING">
-                    {t('enums:itemType.MARKETING')}
-                  </option>
-                  <option value="CRAFTING">
-                    {t('enums:itemType.CRAFTING')}
-                  </option>
-                  <option value="ACCESSORY">
-                    {t('enums:itemType.ACCESSORY')}
-                  </option>
-                  <option value="CURRENCY">
-                    {t('enums:itemType.CURRENCY')}
-                  </option>
-                  <option value="TELEPORT">
-                    {t('enums:itemType.TELEPORT')}
-                  </option>
-                  <option value="TELEPORT_GROUP">
-                    {t('enums:itemType.TELEPORT_GROUP')}
-                  </option>
-                  <option value="SIEGE">{t('enums:itemType.SIEGE')}</option>
-                  <option value="TREASURE_CHEST">
-                    {t('enums:itemType.TREASURE_CHEST')}
-                  </option>
-                  <option value="TREASURE_KEY">
-                    {t('enums:itemType.TREASURE_KEY')}
-                  </option>
-                  <option value="REFINER_TOOL">
-                    {t('enums:itemType.REFINER_TOOL')}
-                  </option>
-                </select>
-              </div>
-            </div>
-            <div className="form-control">
-              <label className="label" htmlFor="stat">
-                {t('pages:items.stat')}
-              </label>
-              <select
-                id="stat"
-                className="select select-bordered"
-                value={search.get('stat') ?? undefined}
-                onChange={(event) => {
-                  search.set('stat', event.target.value);
-                  setSearch(search);
                 }}
               >
-                <option value="any">{t('pages:items.any')}</option>
-                  <option value="WOUNDS">{t('enums:stat.WOUNDS')}</option>
-                  <option value="WEAPON_SKILL">
-                    {t('enums:stat.WEAPON_SKILL')}
-                  </option>
-                  <option value="WILLPOWER">{t('enums:stat.WILLPOWER')}</option>
-                  <option value="BALLISTIC_SKILL">
-                    {t('enums:stat.BALLISTIC_SKILL')}
-                  </option>
-                  <option value="TOUGHNESS">{t('enums:stat.TOUGHNESS')}</option>
-                  <option value="INITIATIVE">
-                    {t('enums:stat.INITIATIVE')}
-                  </option>
-                  <option value="STRENGTH">{t('enums:stat.STRENGTH')}</option>
-                  <option value="INTELLIGENCE">
-                    {t('enums:stat.INTELLIGENCE')}
-                  </option>
-                  <option value="BLOCK">{t('enums:stat.BLOCK')}</option>
-                  <option value="PARRY">{t('enums:stat.PARRY')}</option>
-                  <option value="DISRUPT">{t('enums:stat.DISRUPT')}</option>
-                  <option value="EVADE">{t('enums:stat.EVADE')}</option>
-                  <option value="ELEMENTAL_RESISTANCE">
-                    {t('enums:stat.ELEMENTAL_RESISTANCE')}
-                  </option>
-                  <option value="SPIRIT_RESISTANCE">
-                    {t('enums:stat.SPIRIT_RESISTANCE')}
-                  </option>
-                  <option value="CORPOREAL_RESISTANCE">
-                    {t('enums:stat.CORPOREAL_RESISTANCE')}
-                  </option>
-                  <option value="HEAL_CRIT_RATE">
-                    {t('enums:stat.HEAL_CRIT_RATE')}
-                  </option>
-                  <option value="RANGED_CRIT_RATE">
-                    {t('enums:stat.RANGED_CRIT_RATE')}
-                  </option>
-                  <option value="MELEE_CRIT_RATE">
-                    {t('enums:stat.MELEE_CRIT_RATE')}
-                  </option>
-                  <option value="MAGIC_CRIT_RATE">
-                    {t('enums:stat.MAGIC_CRIT_RATE')}
-                  </option>
-                  <option value="ACTION_POINT_REGEN">
-                    {t('enums:stat.ACTION_POINT_REGEN')}
-                  </option>
-                  <option value="MORALE_REGEN">
-                    {t('enums:stat.MORALE_REGEN')}
-                  </option>
-                  <option value="HEALTH_REGEN">
-                    {t('enums:stat.HEALTH_REGEN')}
-                  </option>
-                  <option value="CRITICAL_HIT_RATE_REDUCTION">
-                    {t('enums:stat.CRITICAL_HIT_RATE_REDUCTION')}
-                  </option>
-                  <option value="BLOCK_STRIKETHROUGH">
-                    {t('enums:stat.BLOCK_STRIKETHROUGH')}
-                  </option>
-                  <option value="PARRY_STRIKETHROUGH">
-                    {t('enums:stat.PARRY_STRIKETHROUGH')}
-                  </option>
-                  <option value="DISRUPT_STRIKETHROUGH">
-                    {t('enums:stat.DISRUPT_STRIKETHROUGH')}
-                  </option>
-                  <option value="EVADE_STRIKETHROUGH">
-                    {t('enums:stat.EVADE_STRIKETHROUGH')}
-                  </option>
-                  <option value="HEALING_POWER">
-                    {t('enums:stat.HEALING_POWER')}
-                  </option>
-                  <option value="MAGIC_POWER">
-                    {t('enums:stat.MAGIC_POWER')}
-                  </option>
-                  <option value="RANGED_POWER">
-                    {t('enums:stat.RANGED_POWER')}
-                  </option>
-                  <option value="MELEE_POWER">
-                    {t('enums:stat.MELEE_POWER')}
-                  </option>
-                  <option value="FORTITUDE">{t('enums:stat.FORTITUDE')}</option>
-                  <option value="AUTO_ATTACK_SPEED">
-                    {t('enums:stat.AUTO_ATTACK_SPEED')}
-                  </option>
-                  <option value="AUTO_ATTACK_DAMAGE">
-                    {t('enums:stat.AUTO_ATTACK_DAMAGE')}
-                  </option>
-                  <option value="ARMOR_PENETRATION">
-                    {t('enums:stat.ARMOR_PENETRATION')}
-                  </option>
-                  <option value="ARMOR_PENETRATION_REDUCTION">
-                    {t('enums:stat.ARMOR_PENETRATION_REDUCTION')}
-                  </option>
-                  <option value="HATE_CAUSED">
-                    {t('enums:stat.HATE_CAUSED')}
-                  </option>
-                  <option value="HATE_RECEIVED">
-                    {t('enums:stat.HATE_RECEIVED')}
-                  </option>
-                </select>
-              </div>
+                <option value="all">{t('pages:items.all')}</option>
+                <option value="SWORD">{t('enums:itemType.SWORD')}</option>
+                <option value="AXE">{t('enums:itemType.AXE')}</option>
+                <option value="HAMMER">{t('enums:itemType.HAMMER')}</option>
+                <option value="BASIC_SHIELD">
+                  {t('enums:itemType.BASIC_SHIELD')}
+                </option>
+                <option value="SHIELD">{t('enums:itemType.SHIELD')}</option>
+                <option value="ROBE">{t('enums:itemType.ROBE')}</option>
+                <option value="BOW">{t('enums:itemType.BOW')}</option>
+                <option value="CROSSBOW">{t('enums:itemType.CROSSBOW')}</option>
+                <option value="GUN">{t('enums:itemType.GUN')}</option>
+                <option value="EXPERT_SHIELD">
+                  {t('enums:itemType.EXPERT_SHIELD')}
+                </option>
+                <option value="STAFF">{t('enums:itemType.STAFF')}</option>
+                <option value="DAGGER">{t('enums:itemType.DAGGER')}</option>
+                <option value="SPEAR">{t('enums:itemType.SPEAR')}</option>
+                <option value="PISTOL">{t('enums:itemType.PISTOL')}</option>
+                <option value="LANCE">{t('enums:itemType.LANCE')}</option>
+                <option value="REPEATING_CROSSBOW">
+                  {t('enums:itemType.REPEATING_CROSSBOW')}
+                </option>
+                <option value="LIGHT_ARMOR">
+                  {t('enums:itemType.LIGHT_ARMOR')}
+                </option>
+                <option value="MEDIUM_ARMOR">
+                  {t('enums:itemType.MEDIUM_ARMOR')}
+                </option>
+                <option value="HEAVY_ARMOR">
+                  {t('enums:itemType.HEAVY_ARMOR')}
+                </option>
+                <option value="QUEST">{t('enums:itemType.QUEST')}</option>
+                <option value="MEDIUM_ROBE">
+                  {t('enums:itemType.MEDIUM_ROBE')}
+                </option>
+                <option value="ENHANCEMENT">
+                  {t('enums:itemType.ENHANCEMENT')}
+                </option>
+                <option value="TROPHY">{t('enums:itemType.TROPHY')}</option>
+                <option value="CHARM">{t('enums:itemType.CHARM')}</option>
+                <option value="DYE">{t('enums:itemType.DYE')}</option>
+                <option value="BASIC_MOUNT">
+                  {t('enums:itemType.BASIC_MOUNT')}
+                </option>
+                <option value="ADVANCED_MOUNT">
+                  {t('enums:itemType.ADVANCED_MOUNT')}
+                </option>
+                <option value="POTION">{t('enums:itemType.POTION')}</option>
+                <option value="SALVAGING">
+                  {t('enums:itemType.SALVAGING')}
+                </option>
+                <option value="MARKETING">
+                  {t('enums:itemType.MARKETING')}
+                </option>
+                <option value="CRAFTING">{t('enums:itemType.CRAFTING')}</option>
+                <option value="ACCESSORY">
+                  {t('enums:itemType.ACCESSORY')}
+                </option>
+                <option value="CURRENCY">{t('enums:itemType.CURRENCY')}</option>
+                <option value="TELEPORT">{t('enums:itemType.TELEPORT')}</option>
+                <option value="TELEPORT_GROUP">
+                  {t('enums:itemType.TELEPORT_GROUP')}
+                </option>
+                <option value="SIEGE">{t('enums:itemType.SIEGE')}</option>
+                <option value="TREASURE_CHEST">
+                  {t('enums:itemType.TREASURE_CHEST')}
+                </option>
+                <option value="TREASURE_KEY">
+                  {t('enums:itemType.TREASURE_KEY')}
+                </option>
+                <option value="REFINER_TOOL">
+                  {t('enums:itemType.REFINER_TOOL')}
+                </option>
+              </select>
             </div>
-            <div className="form-control">
+          </div>
+          <div className="form-control">
+            <label className="label" htmlFor="stat">
+              {t('pages:items.stat')}
+            </label>
+            <select
+              id="stat"
+              className="select select-bordered"
+              value={search.get('stat') ?? undefined}
+              onChange={(event) => {
+                search.set('stat', event.target.value);
+                setSearch(search);
+              }}
+            >
+              <option value="any">{t('pages:items.any')}</option>
+              <option value="WOUNDS">{t('enums:stat.WOUNDS')}</option>
+              <option value="WEAPON_SKILL">
+                {t('enums:stat.WEAPON_SKILL')}
+              </option>
+              <option value="WILLPOWER">{t('enums:stat.WILLPOWER')}</option>
+              <option value="BALLISTIC_SKILL">
+                {t('enums:stat.BALLISTIC_SKILL')}
+              </option>
+              <option value="TOUGHNESS">{t('enums:stat.TOUGHNESS')}</option>
+              <option value="INITIATIVE">{t('enums:stat.INITIATIVE')}</option>
+              <option value="STRENGTH">{t('enums:stat.STRENGTH')}</option>
+              <option value="INTELLIGENCE">
+                {t('enums:stat.INTELLIGENCE')}
+              </option>
+              <option value="BLOCK">{t('enums:stat.BLOCK')}</option>
+              <option value="PARRY">{t('enums:stat.PARRY')}</option>
+              <option value="DISRUPT">{t('enums:stat.DISRUPT')}</option>
+              <option value="EVADE">{t('enums:stat.EVADE')}</option>
+              <option value="ELEMENTAL_RESISTANCE">
+                {t('enums:stat.ELEMENTAL_RESISTANCE')}
+              </option>
+              <option value="SPIRIT_RESISTANCE">
+                {t('enums:stat.SPIRIT_RESISTANCE')}
+              </option>
+              <option value="CORPOREAL_RESISTANCE">
+                {t('enums:stat.CORPOREAL_RESISTANCE')}
+              </option>
+              <option value="HEAL_CRIT_RATE">
+                {t('enums:stat.HEAL_CRIT_RATE')}
+              </option>
+              <option value="RANGED_CRIT_RATE">
+                {t('enums:stat.RANGED_CRIT_RATE')}
+              </option>
+              <option value="MELEE_CRIT_RATE">
+                {t('enums:stat.MELEE_CRIT_RATE')}
+              </option>
+              <option value="MAGIC_CRIT_RATE">
+                {t('enums:stat.MAGIC_CRIT_RATE')}
+              </option>
+              <option value="ACTION_POINT_REGEN">
+                {t('enums:stat.ACTION_POINT_REGEN')}
+              </option>
+              <option value="MORALE_REGEN">
+                {t('enums:stat.MORALE_REGEN')}
+              </option>
+              <option value="HEALTH_REGEN">
+                {t('enums:stat.HEALTH_REGEN')}
+              </option>
+              <option value="CRITICAL_HIT_RATE_REDUCTION">
+                {t('enums:stat.CRITICAL_HIT_RATE_REDUCTION')}
+              </option>
+              <option value="BLOCK_STRIKETHROUGH">
+                {t('enums:stat.BLOCK_STRIKETHROUGH')}
+              </option>
+              <option value="PARRY_STRIKETHROUGH">
+                {t('enums:stat.PARRY_STRIKETHROUGH')}
+              </option>
+              <option value="DISRUPT_STRIKETHROUGH">
+                {t('enums:stat.DISRUPT_STRIKETHROUGH')}
+              </option>
+              <option value="EVADE_STRIKETHROUGH">
+                {t('enums:stat.EVADE_STRIKETHROUGH')}
+              </option>
+              <option value="HEALING_POWER">
+                {t('enums:stat.HEALING_POWER')}
+              </option>
+              <option value="MAGIC_POWER">{t('enums:stat.MAGIC_POWER')}</option>
+              <option value="RANGED_POWER">
+                {t('enums:stat.RANGED_POWER')}
+              </option>
+              <option value="MELEE_POWER">{t('enums:stat.MELEE_POWER')}</option>
+              <option value="FORTITUDE">{t('enums:stat.FORTITUDE')}</option>
+              <option value="AUTO_ATTACK_SPEED">
+                {t('enums:stat.AUTO_ATTACK_SPEED')}
+              </option>
+              <option value="AUTO_ATTACK_DAMAGE">
+                {t('enums:stat.AUTO_ATTACK_DAMAGE')}
+              </option>
+              <option value="ARMOR_PENETRATION">
+                {t('enums:stat.ARMOR_PENETRATION')}
+              </option>
+              <option value="ARMOR_PENETRATION_REDUCTION">
+                {t('enums:stat.ARMOR_PENETRATION_REDUCTION')}
+              </option>
+              <option value="HATE_CAUSED">{t('enums:stat.HATE_CAUSED')}</option>
+              <option value="HATE_RECEIVED">
+                {t('enums:stat.HATE_RECEIVED')}
+              </option>
+            </select>
+          </div>
+        </div>
+        {/* <div className="form-control">
               <label className="label" htmlFor="career">
                 {t('pages:items.usableByCareer')}
-              </label>
-              <select
+              </label> */}
+        {/* <select
                 id="career"
                 className="select select-bordered"
                 value={search.get('career') ?? undefined}
@@ -373,68 +365,48 @@ export function Items(): ReactElement {
                   search.set('career', event.target.value);
                   setSearch(search);
                 }}
-              >
-                  <option value="all">{t('pages:items.all')}</option>
-                  <option value="ARCHMAGE">{t('enums:career.ARCHMAGE')}</option>
-                  <option value="BLACKGUARD">
-                    {t('enums:career.BLACKGUARD')}
-                  </option>
-                  <option value="BLACK_ORC">
-                    {t('enums:career.BLACK_ORC')}
-                  </option>
-                  <option value="BRIGHT_WIZARD">
-                    {t('enums:career.BRIGHT_WIZARD')}
-                  </option>
-                  <option value="CHOPPA">{t('enums:career.CHOPPA')}</option>
-                  <option value="CHOSEN">{t('enums:career.CHOSEN')}</option>
-                  <option value="DISCIPLE_OF_KHAINE">
-                    {t('enums:career.DISCIPLE_OF_KHAINE')}
-                  </option>
-                  <option value="ENGINEER">{t('enums:career.ENGINEER')}</option>
-                  <option value="IRON_BREAKER">
-                    {t('enums:career.IRON_BREAKER')}
-                  </option>
-                  <option value="KNIGHT_OF_THE_BLAZING_SUN">
-                    {t('enums:career.KNIGHT_OF_THE_BLAZING_SUN')}
-                  </option>
-                  <option value="MAGUS">{t('enums:career.MAGUS')}</option>
-                  <option value="MARAUDER">{t('enums:career.MARAUDER')}</option>
-                  <option value="RUNE_PRIEST">
-                    {t('enums:career.RUNE_PRIEST')}
-                  </option>
-                  <option value="SHADOW_WARRIOR">
-                    {t('enums:career.SHADOW_WARRIOR')}
-                  </option>
-                  <option value="SHAMAN">{t('enums:career.SHAMAN')}</option>
-                  <option value="SLAYER">{t('enums:career.SLAYER')}</option>
-                  <option value="SORCERER">{t('enums:career.SORCERER')}</option>
-                  <option value="SQUIG_HERDER">
-                    {t('enums:career.SQUIG_HERDER')}
-                  </option>
-                  <option value="SWORD_MASTER">
-                    {t('enums:career.SWORD_MASTER')}
-                  </option>
-                  <option value="WARRIOR_PRIEST">
-                    {t('enums:career.WARRIOR_PRIEST')}
-                  </option>
-                  <option value="WHITE_LION">
-                    {t('enums:career.WHITE_LION')}
-                  </option>
-                  <option value="WITCH_ELF">
-                    {t('enums:career.WITCH_ELF')}
-                  </option>
-                  <option value="WITCH_HUNTER">
-                    {t('enums:career.WITCH_HUNTER')}
-                  </option>
-                  <option value="ZEALOT">{t('enums:career.ZEALOT')}</option>
-                </select>
+              > */}
+        <option value="all">{t('pages:items.all')}</option>
+        <option value="ARCHMAGE">{t('enums:career.ARCHMAGE')}</option>
+        <option value="BLACKGUARD">{t('enums:career.BLACKGUARD')}</option>
+        <option value="BLACK_ORC">{t('enums:career.BLACK_ORC')}</option>
+        <option value="BRIGHT_WIZARD">{t('enums:career.BRIGHT_WIZARD')}</option>
+        <option value="CHOPPA">{t('enums:career.CHOPPA')}</option>
+        <option value="CHOSEN">{t('enums:career.CHOSEN')}</option>
+        <option value="DISCIPLE_OF_KHAINE">
+          {t('enums:career.DISCIPLE_OF_KHAINE')}
+        </option>
+        <option value="ENGINEER">{t('enums:career.ENGINEER')}</option>
+        <option value="IRON_BREAKER">{t('enums:career.IRON_BREAKER')}</option>
+        <option value="KNIGHT_OF_THE_BLAZING_SUN">
+          {t('enums:career.KNIGHT_OF_THE_BLAZING_SUN')}
+        </option>
+        <option value="MAGUS">{t('enums:career.MAGUS')}</option>
+        <option value="MARAUDER">{t('enums:career.MARAUDER')}</option>
+        <option value="RUNE_PRIEST">{t('enums:career.RUNE_PRIEST')}</option>
+        <option value="SHADOW_WARRIOR">
+          {t('enums:career.SHADOW_WARRIOR')}
+        </option>
+        <option value="SHAMAN">{t('enums:career.SHAMAN')}</option>
+        <option value="SLAYER">{t('enums:career.SLAYER')}</option>
+        <option value="SORCERER">{t('enums:career.SORCERER')}</option>
+        <option value="SQUIG_HERDER">{t('enums:career.SQUIG_HERDER')}</option>
+        <option value="SWORD_MASTER">{t('enums:career.SWORD_MASTER')}</option>
+        <option value="WARRIOR_PRIEST">
+          {t('enums:career.WARRIOR_PRIEST')}
+        </option>
+        <option value="WHITE_LION">{t('enums:career.WHITE_LION')}</option>
+        <option value="WITCH_ELF">{t('enums:career.WITCH_ELF')}</option>
+        <option value="WITCH_HUNTER">{t('enums:career.WITCH_HUNTER')}</option>
+        <option value="ZEALOT">{t('enums:career.ZEALOT')}</option>
+        {/* </select>
               </div>
             </div>
           </div>
-        </div>
+        </div> */}
       </div>
-      
-      <div className="overflow-x-auto">
+
+      {/* <div className="overflow-x-auto">
         <table className="table table-zebra table-hover table-compact w-full">
           <thead>
             <tr>
@@ -451,12 +423,12 @@ export function Items(): ReactElement {
             ))}
           </tbody>
         </table>
-      </div>
-      <QueryPagination
+      </div> */}
+      {/* <QueryPagination
         pageInfo={pageInfo}
         perPage={perPage}
         refetch={refetch}
-      />
+      /> */}
     </div>
   );
 }
