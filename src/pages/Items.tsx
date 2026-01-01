@@ -247,6 +247,70 @@ export function Items(): ReactElement {
                 </option>
               </select>
             </div>
+            <div className="form-control">
+              <label className="label" htmlFor="career">
+                {t('pages:items.usableByCareer')}
+              </label>
+              <select
+                id="career"
+                className="select select-bordered"
+                value={search.get('career') ?? undefined}
+                onChange={(event) => {
+                  search.set('career', event.target.value);
+                  setSearch(search);
+                }}
+              >
+                <option value="all">{t('pages:items.all')}</option>
+                <option value="ARCHMAGE">{t('enums:career.ARCHMAGE')}</option>
+                <option value="BLACKGUARD">
+                  {t('enums:career.BLACKGUARD')}
+                </option>
+                <option value="BLACK_ORC">{t('enums:career.BLACK_ORC')}</option>
+                <option value="BRIGHT_WIZARD">
+                  {t('enums:career.BRIGHT_WIZARD')}
+                </option>
+                <option value="CHOPPA">{t('enums:career.CHOPPA')}</option>
+                <option value="CHOSEN">{t('enums:career.CHOSEN')}</option>
+                <option value="DISCIPLE_OF_KHAINE">
+                  {t('enums:career.DISCIPLE_OF_KHAINE')}
+                </option>
+                <option value="ENGINEER">{t('enums:career.ENGINEER')}</option>
+                <option value="IRON_BREAKER">
+                  {t('enums:career.IRON_BREAKER')}
+                </option>
+                <option value="KNIGHT_OF_THE_BLAZING_SUN">
+                  {t('enums:career.KNIGHT_OF_THE_BLAZING_SUN')}
+                </option>
+                <option value="MAGUS">{t('enums:career.MAGUS')}</option>
+                <option value="MARAUDER">{t('enums:career.MARAUDER')}</option>
+                <option value="RUNE_PRIEST">
+                  {t('enums:career.RUNE_PRIEST')}
+                </option>
+                <option value="SHADOW_WARRIOR">
+                  {t('enums:career.SHADOW_WARRIOR')}
+                </option>
+                <option value="SHAMAN">{t('enums:career.SHAMAN')}</option>
+                <option value="SLAYER">{t('enums:career.SLAYER')}</option>
+                <option value="SORCERER">{t('enums:career.SORCERER')}</option>
+                <option value="SQUIG_HERDER">
+                  {t('enums:career.SQUIG_HERDER')}
+                </option>
+                <option value="SWORD_MASTER">
+                  {t('enums:career.SWORD_MASTER')}
+                </option>
+                <option value="WARRIOR_PRIEST">
+                  {t('enums:career.WARRIOR_PRIEST')}
+                </option>
+                <option value="WHITE_LION">
+                  {t('enums:career.WHITE_LION')}
+                </option>
+                <option value="WITCH_ELF">{t('enums:career.WITCH_ELF')}</option>
+                <option value="WITCH_HUNTER">
+                  {t('enums:career.WITCH_HUNTER')}
+                </option>
+                <option value="ZEALOT">{t('enums:career.ZEALOT')}</option>
+              </select>
+            </div>
           </div>
           <div className="form-control">
             <label className="label" htmlFor="stat">
@@ -353,60 +417,9 @@ export function Items(): ReactElement {
             </select>
           </div>
         </div>
-        {/* <div className="form-control">
-              <label className="label" htmlFor="career">
-                {t('pages:items.usableByCareer')}
-              </label> */}
-        {/* <select
-                id="career"
-                className="select select-bordered"
-                value={search.get('career') ?? undefined}
-                onChange={(event) => {
-                  search.set('career', event.target.value);
-                  setSearch(search);
-                }}
-              > */}
-        <option value="all">{t('pages:items.all')}</option>
-        <option value="ARCHMAGE">{t('enums:career.ARCHMAGE')}</option>
-        <option value="BLACKGUARD">{t('enums:career.BLACKGUARD')}</option>
-        <option value="BLACK_ORC">{t('enums:career.BLACK_ORC')}</option>
-        <option value="BRIGHT_WIZARD">{t('enums:career.BRIGHT_WIZARD')}</option>
-        <option value="CHOPPA">{t('enums:career.CHOPPA')}</option>
-        <option value="CHOSEN">{t('enums:career.CHOSEN')}</option>
-        <option value="DISCIPLE_OF_KHAINE">
-          {t('enums:career.DISCIPLE_OF_KHAINE')}
-        </option>
-        <option value="ENGINEER">{t('enums:career.ENGINEER')}</option>
-        <option value="IRON_BREAKER">{t('enums:career.IRON_BREAKER')}</option>
-        <option value="KNIGHT_OF_THE_BLAZING_SUN">
-          {t('enums:career.KNIGHT_OF_THE_BLAZING_SUN')}
-        </option>
-        <option value="MAGUS">{t('enums:career.MAGUS')}</option>
-        <option value="MARAUDER">{t('enums:career.MARAUDER')}</option>
-        <option value="RUNE_PRIEST">{t('enums:career.RUNE_PRIEST')}</option>
-        <option value="SHADOW_WARRIOR">
-          {t('enums:career.SHADOW_WARRIOR')}
-        </option>
-        <option value="SHAMAN">{t('enums:career.SHAMAN')}</option>
-        <option value="SLAYER">{t('enums:career.SLAYER')}</option>
-        <option value="SORCERER">{t('enums:career.SORCERER')}</option>
-        <option value="SQUIG_HERDER">{t('enums:career.SQUIG_HERDER')}</option>
-        <option value="SWORD_MASTER">{t('enums:career.SWORD_MASTER')}</option>
-        <option value="WARRIOR_PRIEST">
-          {t('enums:career.WARRIOR_PRIEST')}
-        </option>
-        <option value="WHITE_LION">{t('enums:career.WHITE_LION')}</option>
-        <option value="WITCH_ELF">{t('enums:career.WITCH_ELF')}</option>
-        <option value="WITCH_HUNTER">{t('enums:career.WITCH_HUNTER')}</option>
-        <option value="ZEALOT">{t('enums:career.ZEALOT')}</option>
-        {/* </select>
-              </div>
-            </div>
-          </div>
-        </div> */}
       </div>
 
-      {/* <div className="overflow-x-auto">
+      <div className="overflow-x-auto">
         <table className="table table-zebra table-hover table-compact w-full">
           <thead>
             <tr>
@@ -423,12 +436,12 @@ export function Items(): ReactElement {
             ))}
           </tbody>
         </table>
-      </div> */}
-      {/* <QueryPagination
+      </div>
+      <QueryPagination
         pageInfo={pageInfo}
         perPage={perPage}
         refetch={refetch}
-      /> */}
+      />
     </div>
   );
 }
