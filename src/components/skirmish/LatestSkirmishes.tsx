@@ -81,9 +81,9 @@ export function LatestSkirmishes({
 
   return (
     <div>
-      <div className="is-size-4 is-family-secondary is-uppercase">
+      <h3 className="text-lg font-bold uppercase mb-4">
         {t('latestSkirmishes.title')}
-      </div>
+      </h3>
       <SkirmishFilters />
       <SkirmishList
         query={LATEST_SKIRMISHES}

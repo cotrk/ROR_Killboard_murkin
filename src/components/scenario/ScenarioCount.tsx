@@ -2,7 +2,7 @@ import { gql, useQuery } from '@apollo/client';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router';
 import { Query } from '@/__generated__/graphql';
-import { ErrorMessage } from '@/components/global/ErrorMessage';
+import { LoadingState } from '@/components/shared/LoadingState';
 import { getScenarioFilters } from '@/components/scenario/ScenarioFilters';
 
 const SCENARIO_COUNT = gql`
@@ -28,34 +28,36 @@ const SCENARIO_COUNT = gql`
 export function ScenarioCount({
   characterId,
   guildId,
-  wins,
-  title,
 }: {
   characterId?: string;
   guildId?: string;
-  wins: boolean;
-  title: string;
-}): React.ReactElement | null {
-  const { t } = useTranslation(['common', 'components']);
+}) {
+  const { t } = useTranslation(['common', 'scenarios']);
   const [search] = useSearchParams();
 
   const { loading, error, data } = useQuery<Query>(SCENARIO_COUNT, {
     variables: {
-      characterId,
-      guildId,
-      wins,
       ...getScenarioFilters(search),
+      characterId: characterId || null,
+      guildId: guildId || null,
     },
   });
 
-  if (loading) return <progress className="progress" />;
-  if (error) return <ErrorMessage name={error.name} message={error.message} />;
-  if (data?.scenarios?.totalCount == null)
-    return <ErrorMessage customText={t('common:notFound')} />;
+  const count = data?.scenarios?.totalCount || 0;
+
+  if (loading) return <div className="skeleton h-8 w-32"></div>;
+  if (error) return <div className="alert alert-error">Error loading scenario count: {error.message}</div>;
 
   return (
-    <div className="is-size-4 is-family-secondary is-uppercase">
-      {title} {data.scenarios.totalCount != null && data.scenarios.totalCount}
+    <div className="stat bg-base-100 shadow-xl">
+      <div className="stat-body text-center">
+        <div className="stat-value text-3xl font-bold">
+          {count.toLocaleString()}
+        </div>
+        <div className="stat-title">
+          {t('scenarios:totalScenarios')}
+        </div>
+      </div>
     </div>
   );
 }

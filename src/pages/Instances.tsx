@@ -1,30 +1,12 @@
 import { Link, useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { gql, useQuery } from '@apollo/client';
-import useWindowDimensions from '@/hooks/useWindowDimensions';
-import { InstanceFilterInput } from '@/__generated__/graphql';
-import { ErrorMessage } from '@/components/global/ErrorMessage';
-import { SearchBox } from '@/components/global/SearchBox';
-import { QueryPagination } from '@/components/global/QueryPagination';
 import { ReactElement } from 'react';
-import clsx from 'clsx';
 import { GetInstancesQuery } from '@/__generated__/graphql';
 
 const QUERY = gql`
-  query GetInstances(
-    $first: Int
-    $last: Int
-    $before: String
-    $after: String
-    $where: InstanceFilterInput
-  ) {
-    instances(
-      first: $first
-      last: $last
-      before: $before
-      after: $after
-      where: $where
-    ) {
+  query GetInstances($first: Int, $after: String) {
+    instances(first: $first, after: $after) {
       nodes {
         id
         name
@@ -35,125 +17,99 @@ const QUERY = gql`
       pageInfo {
         hasNextPage
         endCursor
-        hasPreviousPage
-        startCursor
       }
     }
   }
 `;
 
-const getInstanceNameFilter = (
-  search: URLSearchParams,
-): InstanceFilterInput => {
-  const name = search.get('name');
-
-  if (!name) {
-    return {};
-  }
-
-  return { name: { contains: name } };
-};
-
-const getFilters = (search: URLSearchParams): InstanceFilterInput => ({
-  ...getInstanceNameFilter(search),
-});
-
 export function Instances(): ReactElement {
-  const perPage = 15;
-  const [search, setSearch] = useSearchParams();
-  const { t } = useTranslation(['common', 'pages', 'enums']);
-  const { loading, error, data, refetch } = useQuery<GetInstancesQuery>(QUERY, {
+  const { t } = useTranslation(['common', 'pages', 'instances']);
+  const [searchParams] = useSearchParams();
+  const search = searchParams.get('name') || '';
+
+  const { loading, error, data } = useQuery<GetInstancesQuery>(QUERY, {
     variables: {
-      where: getFilters(search),
-      first: perPage,
+      first: 20,
+      where: search ? { name: { contains: search } } : undefined,
     },
   });
-  const { width } = useWindowDimensions();
-  const isMobile = width <= 768;
 
-  if (loading) return <progress className="progress" />;
-  if (error) return <ErrorMessage name={error.name} message={error.message} />;
-  if (data?.instances?.nodes == null)
-    return <ErrorMessage customText={t('common:notFound')} />;
+  if (loading && !data) return <div className="skeleton h-64"></div>;
+  if (error) return <div className="alert alert-error">Error loading instances: {error.message}</div>;
 
-  const entries = data.instances.nodes;
-  const { pageInfo } = data.instances;
+  const instances = data?.instances?.nodes || [];
 
   return (
-    <div className="container is-max-widescreen mt-2">
-      <nav className="breadcrumb" aria-label="breadcrumbs">
-        <ul>
-          <li>
-            <Link to="/">{t('common:home')}</Link>
-          </li>
-          <li className="is-active">
-            <Link to="/creatures">{t('pages:creatures.title')}</Link>
-          </li>
-        </ul>
-      </nav>
+    <div className="container mx-auto max-w-7xl mt-2">
+      <div className="flex justify-between items-center mb-4">
+        <nav className="breadcrumbs text-sm">
+          <ul>
+            <li>
+              <Link to="/" className="link-hover link-primary">{t('common:home')}</Link>
+            </li>
+            <li className="text-base-content/60">
+              {t('common:instances')}
+            </li>
+          </ul>
+        </nav>
+      </div>
 
-      <div className="card mb-5">
-        <div className="card-content">
-          <div className="field">
-            <label className="label">{t('pages:instances.search')}</label>
-            <SearchBox
-              initialQuery={search.get('name') || ''}
-              onSubmit={(event) => {
-                search.set('name', event);
-                setSearch(search);
-              }}
-            />
+      <div className="card bg-base-100 shadow-xl mb-6">
+        <div className="card-body">
+          <h2 className="card-title text-2xl mb-4">{t('common:instances')}</h2>
+          
+          {search && (
+            <div className="alert alert-info mb-4">
+              Searching for: {search}
+            </div>
+          )}
+
+          <div className="overflow-x-auto">
+            <table className="table table-zebra w-full">
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Encounters</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {instances.map((instance) => (
+                  <tr key={instance.id}>
+                    <td>
+                      <Link 
+                        to={`/instance/${instance.id}`}
+                        className="link-hover link-primary font-medium"
+                      >
+                        {instance.name}
+                      </Link>
+                    </td>
+                    <td>
+                      <div className="badge badge-outline">
+                        {instance.encounters?.length || 0} Encounters
+                      </div>
+                    </td>
+                    <td>
+                      <Link 
+                        to={`/instance-runs?instance=${instance.id}`}
+                        className="btn btn-outline btn-sm"
+                      >
+                        View Runs
+                      </Link>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
+
+          {instances.length === 0 && !loading && (
+            <div className="alert alert-info">
+              {search ? 'No instances found matching your search.' : 'No instances available.'}
+            </div>
+          )}
         </div>
       </div>
-
-      <div className="table-container">
-        <table
-          className={clsx(
-            'table',
-            'is-striped',
-            'is-hoverable',
-            isMobile ? 'is-narrow' : 'is-fullwidth',
-          )}
-        >
-          <thead>
-            <tr>
-              <th>{t('pages:instances.name')}</th>
-              <th>{t('pages:instances.encounters')}</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {entries.map((instance) => (
-              <tr key={instance.id}>
-                <td>
-                  <Link to={`/instance/${instance.id}`}>{instance.name}</Link>
-                </td>
-                <td>{instance.encounters?.length || 0}</td>
-                <td>
-                  <Link
-                    to={`/instance-statistics/${instance.id}`}
-                    className="button is-primary p-2 is-pulled-right"
-                  >
-                    {t('pages:instances.statistics')}
-                  </Link>
-                  <Link
-                    to={`/instance-runs?instance=${instance.id}`}
-                    className="button is-primary p-2 is-pulled-right mr-2"
-                  >
-                    {t('pages:instances.runs')}
-                  </Link>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      <QueryPagination
-        pageInfo={pageInfo}
-        perPage={perPage}
-        refetch={refetch}
-      />
     </div>
   );
 }

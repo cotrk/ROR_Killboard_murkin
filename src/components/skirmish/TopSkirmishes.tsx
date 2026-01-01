@@ -56,20 +56,20 @@ export function TopSkirmishes(): ReactElement {
   if (loading)
     return (
       <div className="mb-3">
-        <div className="is-size-4 is-family-secondary is-uppercase">
+        <h3 className="text-lg font-bold uppercase mb-4">
           {t('topSkirmishes.title')}
-        </div>
-        <progress className="progress" />;
+        </h3>
+        <div className="flex justify-center py-4"><span className="loading loading-spinner loading-md"></span></div>
       </div>
     );
 
   if (error)
     return (
       <div className="mb-3">
-        <div className="is-size-4 is-family-secondary is-uppercase">
+        <h3 className="text-lg font-bold uppercase mb-4">
           {t('topSkirmishes.title')}
-        </div>
-        <ErrorMessage name={error.name} message={error.message} />{' '}
+        </h3>
+        <ErrorMessage name={error.name} message={error.message} />
       </div>
     );
 
@@ -78,13 +78,13 @@ export function TopSkirmishes(): ReactElement {
     (s) => s.id,
   );
 
-  if (skirmishes == null) return <p>{t('common:error')}</p>;
+  if (skirmishes == null) return <p className="text-center py-4">{t('common:error')}</p>;
 
   return (
     <div className="mb-3">
-      <div className="is-size-4 is-family-secondary is-uppercase">
+      <h3 className="text-lg font-bold uppercase mb-4">
         {t('topSkirmishes.title')}
-      </div>
+      </h3>
       <SkirmishListTable data={skirmishes} />
     </div>
   );

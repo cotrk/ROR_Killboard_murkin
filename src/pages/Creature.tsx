@@ -2,7 +2,7 @@ import { Link, useParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { gql, useQuery } from '@apollo/client';
 import { MapSetup, Query, Zone } from '@/__generated__/graphql';
-import { ErrorMessage } from '@/components/global/ErrorMessage';
+import { LoadingState } from '@/components/shared/LoadingState';
 import { MapPositions } from '@/components/MapPositions';
 import { questTypeIcon } from '../utils';
 import { ReactElement } from 'react';
@@ -33,192 +33,118 @@ const CREATURE_DETAILS = gql`
           }
         }
       }
-      questsStarter {
-        id
-        name
-        type {
-          isEpic
-          isGroup
-          isNone
-          isPlayerKill
-          isRvR
-          isTome
-          isTravel
-        }
-        repeatableType
-      }
       vendorItems {
-        totalCount
+        nodes {
+          id
+          name
+          cost
+          item {
+            id
+            name
+            iconUrl
+            type
+            slot
+          }
+        }
       }
     }
   }
 `;
 
-export function Creature({
-  tab,
-}: {
-  tab?: undefined | 'quests' | 'vendorItems';
-}): ReactElement {
+export function Creature(): ReactElement {
   const { t } = useTranslation(['common', 'pages']);
-  const { id, zoneId } = useParams();
-  const { loading, error, data } = useQuery<Query>(CREATURE_DETAILS, {
+  const { id } = useParams<{ id: string }>();
+
+  const { loading, error, data } = useQuery(CREATURE_DETAILS, {
     variables: { id },
   });
 
-  if (loading) return <progress className="progress" />;
-  if (error) return <ErrorMessage name={error.name} message={error.message} />;
+  if (loading) return <LoadingState message="Loading creature details..." />;
+  if (error) return <div className="alert alert-error">Error loading creature: {error.message}</div>;
+  if (!data?.creature) return <div className="alert alert-info">Creature not found</div>;
 
-  const entry = data?.creature;
-  if (entry == null) return <ErrorMessage customText={t('common:notFound')} />;
-
-  const zoneIds: string[] = Array.from(
-    new Set(entry.spawns.map((spawn) => spawn.position.zone?.id as string)),
-  );
-
-  const zones = new Map<string, [Zone, MapSetup]>(
-    entry.spawns.map((spawn): [string, [Zone, MapSetup]] => [
-      spawn.position.zone?.id as string,
-      [spawn.position.zone as Zone, spawn.position.mapSetup as MapSetup],
-    ]),
-  );
-
-  const zone = zoneId ? zones.get(zoneId)?.[0] : zones.get(zoneIds[0])?.[0];
-  const mapSetup = zoneId ? zones.get(zoneId)?.[1] : zones.get(zoneIds[0])?.[1];
-
-  if (zone == null || mapSetup == null)
-    return <ErrorMessage customText={t('common:notFound')} />;
-
-  const hasQuests = entry.questsStarter.length > 0;
-  const hasVendorItems = (entry.vendorItems?.totalCount ?? 0) > 0;
-  const activeTab =
-    tab ??
-    (hasQuests ? 'quests' : undefined) ??
-    (hasVendorItems ? 'vendorItems' : undefined);
+  const creature = data.creature;
 
   return (
-    <div className="container is-max-widescreen mt-2">
-      <nav className="breadcrumb" aria-label="breadcrumbs">
-        <ul>
-          <li>
-            <Link to="/">{t('common:home')}</Link>
-          </li>
-          <li>
-            <Link to="/creatures">{t('common:creatures')}</Link>
-          </li>
-          <li className="is-active">
-            <Link to={`/creature/${id}`}>
-              {t('pages:creature.creatureId', { creatureId: id })}
-            </Link>
-          </li>
-        </ul>
-      </nav>
-
-      <div className="card mb-5">
-        <div className="card-content">
-          <p className="is-size-4 is-family-secondary has-text-info">
-            {entry.name}
-          </p>
-          <p>{t(`enums:creatureSubType.${entry.creatureSubType}`)}</p>
-        </div>
+    <div className="container mx-auto max-w-7xl mt-2">
+      <div className="flex justify-between items-center mb-4">
+        <nav className="breadcrumbs text-sm">
+          <ul>
+            <li>
+              <Link to="/" className="link-hover link-primary">{t('common:home')}</Link>
+            </li>
+            <li>
+              <Link to="/creatures" className="link-hover link-primary">{t('pages:creatures.title')}</Link>
+            </li>
+            <li className="text-base-content/60">
+              {creature.name}
+            </li>
+          </ul>
+        </nav>
       </div>
 
-      <div className="tabs">
-        <ul>
-          {hasQuests && (
-            <li className={activeTab === 'quests' ? 'is-active' : ''}>
-              <Link to={`/creature/${id}/quests`}>
-                <img
-                  src="/images/corner_icons/ea_icon_corner_quest.png"
-                  alt="Quest Icon"
-                  width={24}
-                  height={24}
-                  className="px-1"
-                />
-                {t('pages:creature.questsStarter')} (
-                {entry.questsStarter.length})
-              </Link>
-            </li>
-          )}
-          {hasVendorItems && (
-            <li className={activeTab === 'vendorItems' ? 'is-active' : ''}>
-              <Link to={`/creature/${id}/vendorItems`}>
-                <img
-                  src="/images/corner_icons/ea_icon_corner_merchant.png"
-                  alt="Merchant Icon"
-                  width={24}
-                  height={24}
-                  className="px-1"
-                />
-                {t('pages:creature.vendorItems')} (
-                {entry.vendorItems?.totalCount})
-              </Link>
-            </li>
-          )}
-        </ul>
-      </div>
-
-      {activeTab === 'quests' && (
-        <div className="card mb-5">
-          <div className="card-content">
-            <p className="is-size-4 is-family-secondary has-text-info">
-              {t('pages:creature.questsStarter')}
-            </p>
-            {entry.questsStarter.map((quest) => (
-              <Link to={`/quest/${quest.id}`}>
-                <div className="icon-text">
-                  <span className="icon has-text-info">
-                    <img
-                      src={`/images/icons/${questTypeIcon(
-                        quest.type,
-                        quest.repeatableType,
-                      )}`}
-                      alt="Quest Type"
-                    />
-                  </span>
-                  <span>{quest.name}</span>
-                </div>
-              </Link>
-            ))}
+      <div className="card bg-base-100 shadow-xl mb-6">
+        <div className="card-body">
+          <h1 className="card-title text-2xl mb-4">{creature.name}</h1>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <div className="stat">
+              <div className="stat-title">Type</div>
+              <div className="stat-value text-lg capitalize">{creature.creatureType}</div>
+            </div>
+            <div className="stat">
+              <div className="stat-title">Sub Type</div>
+              <div className="stat-value text-lg capitalize">{creature.creatureSubType}</div>
+            </div>
+            <div className="stat">
+              <div className="stat-title">Realm</div>
+              <div className="stat-value text-lg capitalize">
+                <span className={creature.realm === 'Destruction' ? 'text-error' : 'text-info'}>
+                  {creature.realm}
+                </span>
+              </div>
+            </div>
+            <div className="stat">
+              <div className="stat-title">Spawn Points</div>
+              <div className="stat-value text-lg">{creature.spawns?.length || 0}</div>
+            </div>
           </div>
-        </div>
-      )}
 
-      {activeTab === 'vendorItems' && <VendorItems creatureId={id} />}
+          {creature.spawns && creature.spawns.length > 0 && (
+            <>
+              <div className="divider"></div>
+              <h2 className="card-title">Spawn Locations</h2>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {creature.spawns.map((spawn) => (
+                  <div key={spawn.id} className="card bg-base-200">
+                    <div className="card-body">
+                      <h3 className="card-title text-lg">
+                        <Link to={`/zone/${spawn.position.zone.id}`} className="link-hover link-primary">
+                          {spawn.position.zone.name}
+                        </Link>
+                      </h3>
+                      <div className="grid grid-cols-2 gap-4 text-sm">
+                        <div>
+                          <span className="font-medium">Position:</span> ({spawn.position.x}, {spawn.position.y})
+                        </div>
+                        <div>
+                          <span className="font-medium">Map:</span> {spawn.position.mapSetup?.nwCornerX}, {spawn.position.mapSetup?.nwCornerY}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
 
-      <div className="tabs">
-        <ul>
-          {zoneIds.map((z) => (
-            <li key={z} className={zoneId === z ? 'is-active' : ''}>
-              <Link to={`/creature/${id}/zone/${z}`}>
-                {zones.get(z)?.[0].name}
-              </Link>
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      <div className="card mb-5">
-        <div className="card-content">
-          <div
-            style={{
-              width: '640px',
-              height: '640px',
-            }}
-          >
-            <MapPositions
-              positions={entry.spawns
-                .filter((spawn) => spawn.position.zone?.id === zone.id)
-                .map((spawn) => ({
-                  x: spawn.position.x,
-                  y: spawn.position.y,
-                }))}
-              zoneId={Number(zone.id)}
-              nwCornerX={mapSetup.nwCornerX}
-              nwCornerY={mapSetup.nwCornerY}
-              seCornerX={mapSetup.seCornerX}
-              seCornerY={mapSetup.seCornerY}
-            />
-          </div>
+          {creature.vendorItems && creature.vendorItems.nodes.length > 0 && (
+            <>
+              <div className="divider"></div>
+              <h2 className="card-title">Vendor Items</h2>
+              <VendorItems items={creature.vendorItems.nodes} />
+            </>
+          )}
         </div>
       </div>
     </div>

@@ -36,64 +36,56 @@ export function ScenarioFilters({
   const queueType = search.get('queue_type') || 'all';
 
   return (
-    <div className="card mb-5">
-      <div className="card-content">
-        <div className="columns">
-          <div className="column">
-            <div className="field is-horizontal">
-              <div className="field-label is-normal">
-                <label className="label" htmlFor="queueType-select">
-                  {t('scenarioFilters.queueType')}
-                </label>
-              </div>
-              <div className="field-body">
-                <div className="control">
-                  <div className="select">
-                    <select
-                      id="queueType-select"
-                      value={queueType}
-                      onChange={(event) => {
-                        search.set('queue_type', event.target.value);
-                        setSearch(search);
-                      }}
-                    >
-                      <option value="all">
-                        {t('scenarioFilters.queueTypeAll')}
-                      </option>
-                      <option value="standard">
-                        {t('scenarioFilters.queueTypeStandard')}
-                      </option>
-                      <option value="solo">
-                        {t('scenarioFilters.queueTypeSolo')}
-                      </option>
-                      <option value="city_siege">
-                        {t('scenarioFilters.queueTypeCitySiege')}
-                      </option>
-                      <option value="group_ranked">
-                        {t('scenarioFilters.queueTypeGroupRanked')}
-                      </option>
-                      <option value="solo_ranked">
-                        {t('scenarioFilters.queueTypeSoloRanked')}
-                      </option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-            </div>
+    <div className="card bg-base-100 shadow-xl mb-6">
+      <div className="card-body">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="form-control">
+            <label className="label" htmlFor="queueType-select">
+              <span className="label-text">{t('scenarioFilters.queueType')}</span>
+            </label>
+            <select
+              id="queueType-select"
+              className="select select-bordered"
+              value={queueType}
+              onChange={(event) => {
+                search.set('queue_type', event.target.value);
+                setSearch(search);
+              }}
+            >
+              <option value="all">
+                {t('scenarioFilters.queueTypeAll')}
+              </option>
+              <option value="standard">
+                {t('scenarioFilters.queueTypeStandard')}
+              </option>
+              <option value="solo">
+                {t('scenarioFilters.queueTypeSolo')}
+              </option>
+              <option value="city_siege">
+                {t('scenarioFilters.queueTypeCitySiege')}
+              </option>
+              <option value="group_ranked">
+                {t('scenarioFilters.queueTypeGroupRanked')}
+              </option>
+              <option value="solo_ranked">
+                {t('scenarioFilters.queueTypeSoloRanked')}
+              </option>
+            </select>
           </div>
           {showPremadeOnly && (
-            <div className="column">
-              <label title="Scenarios with 6+ guild members only">
+            <div className="form-control">
+              <label className="label cursor-pointer" title="Scenarios with 6+ guild members only">
                 <input
                   type="checkbox"
+                  className="checkbox checkbox-primary"
                   checked={search.has('premadeOnly')}
                   onChange={(event) => {
                     if (event.target.checked) search.set('premadeOnly', 'true');
                     else search.delete('premadeOnly');
                     setSearch(search);
                   }}
-                />{' '}
-                {t('scenarioFilters.premadeOnly')}
+                />
+                <span className="label-text ml-2">{t('scenarioFilters.premadeOnly')}</span>
               </label>
             </div>
           )}

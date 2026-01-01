@@ -29,68 +29,50 @@ const LATEST_SKIRMISHES = gql`
         scenario {
           id
           name
-        }
-        primaryZone {
-          id
-          name
-        }
-        primaryZoneArea {
-          id
-          name
-        }
-        startTime
-        endTime
-        topGuildsByPlayers {
-          guild {
+          zone {
             id
             name
-            realm
-            heraldry {
-              emblem
-              pattern
-              color1
-              color2
-              shape
-            }
           }
-          count
         }
-        numberOfKills
-        numberOfKillsOrder
-        numberOfKillsDestruction
-        numberOfPlayers
-        numberOfPlayersOrder
-        numberOfPlayersDestruction
-      }
-      pageInfo {
-        hasNextPage
-        endCursor
-        hasPreviousPage
-        startCursor
+        start
+        end
+        result
+        scoreboardEntries {
+          nodes {
+            rank
+            kills
+            deaths
+            damageDone
+            healingDone
+            renown
+          }
+        }
       }
     }
   }
 `;
 
-export function CharacterLatestSkirmishes({
-  characterId,
-  perPage = 15,
-}: {
-  characterId?: string;
-  perPage?: number;
-}): ReactElement {
+interface CharacterLatestSkirmishesProps {
+  characterId: string;
+}
+
+export function CharacterLatestSkirmishes({ characterId }: CharacterLatestSkirmishesProps): ReactElement {
   const [search] = useSearchParams();
+  const filters = getskirmishFilters(search);
 
   return (
-    <>
-      <SkirmishFilters />
-      <SkirmishList
-        query={LATEST_SKIRMISHES}
-        queryOptions={{
-          variables: { characterId, where: getskirmishFilters(search) },
-        }}
-        perPage={perPage}
-      />
-    </>
+    <SkirmishList
+      query={LATEST_SKIRMISHES}
+      queryOptions={{
+        variables: {
+          characterId,
+          where: getskirmishFilters(search),
+          first: 10,
+        },
+      }}
+      perPage={10}
+      title="Latest Skirmishes"
+      showZone={true}
+    />
   );
 }

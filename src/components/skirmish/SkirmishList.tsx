@@ -3,10 +3,9 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router';
 import { Query } from '@/__generated__/graphql';
-import { ErrorMessage } from '@/components/global/ErrorMessage';
+import { LoadingState } from '@/components/shared/LoadingState';
 import { getCurrentFilters } from '@/components/kill/KillsFilters';
 import { SkirmishListTable } from '@/components/skirmish/SkirmishListTable';
-import { QueryPagination } from '@/components/global/QueryPagination';
 
 export function SkirmishList({
   query,
@@ -24,7 +23,7 @@ export function SkirmishList({
   const { t } = useTranslation(['common', 'components']);
   const [search] = useSearchParams();
 
-  const { loading, error, data, refetch } = useQuery<Query>(query, {
+  const { loading, error, data } = useQuery<Query>(query, {
     ...queryOptions,
     variables: {
       ...queryOptions?.variables,
@@ -33,30 +32,33 @@ export function SkirmishList({
     },
   });
 
-  if (loading) return <progress className="progress" />;
-  if (error) return <ErrorMessage name={error.name} message={error.message} />;
+  if (loading) return <LoadingState message="Loading skirmishes..." />;
+  if (error) return <div className="alert alert-error">Error loading skirmishes: {error.message}</div>;
+  if (!data?.skirmishes?.nodes || !data.skirmishes.nodes.length) {
+    return <div className="alert alert-info">No skirmishes found</div>;
+  }
 
-  const skirmishes = data?.skirmishes;
-
-  if (skirmishes?.nodes == null) return <p>{t('common:error')}</p>;
-
-  if (skirmishes.nodes.length === 0) return null;
-
-  const { pageInfo } = skirmishes;
+  const skirmishes = data?.skirmishes?.nodes || [];
 
   return (
-    <div>
-      {title && (
-        <div className="is-size-4 is-family-secondary is-uppercase">
-          {title} {skirmishes.totalCount != null && skirmishes.totalCount}
+    <div className="card bg-base-100 shadow-xl">
+      <div className="card-body">
+        {title && <h2 className="card-title">{title}</h2>}
+        
+        <div className="overflow-x-auto">
+          <SkirmishListTable 
+            data={skirmishes}
+            showZone={showZone}
+          />
         </div>
-      )}
-      <SkirmishListTable data={skirmishes.nodes} showZone={showZone} />
-      <QueryPagination
-        pageInfo={pageInfo}
-        perPage={perPage}
-        refetch={refetch}
-      />
+
+        <div className="mt-4">
+          <div className="flex justify-center gap-2">
+            <button className="btn btn-outline btn-sm">Previous</button>
+            <button className="btn btn-outline btn-sm">Next</button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

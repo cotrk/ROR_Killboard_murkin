@@ -1,7 +1,7 @@
 import { gql, useQuery } from '@apollo/client';
 import { useTranslation } from 'react-i18next';
 import { Link, useSearchParams } from 'react-router';
-import { ErrorMessage } from '@/components/global/ErrorMessage';
+import { LoadingState } from '@/components/shared/LoadingState';
 import { RankedLeaderboardTable } from '@/components/RankedLeaderboardTable';
 import { ReactElement } from 'react';
 import { GetRankedLeaderboardSeasonsQuery } from '@/__generated__/graphql';
@@ -26,75 +26,60 @@ export function RankedLeaderboard(): ReactElement {
     {},
   );
 
-  if (loading) return <progress className="progress" />;
-  if (error) return <ErrorMessage name={error.name} message={error.message} />;
+  if (loading) return <LoadingState message="Loading leaderboard seasons..." />;
+  if (error) return <div className="alert alert-error">Error loading leaderboard: {error.message}</div>;
+  if (!data?.rankedSeasons) return <div className="alert alert-info">No seasons found</div>;
 
-  if (data?.rankedSeasons == null)
-    return <ErrorMessage customText={t('common:notFound')} />;
-
-  const latestSeason = data.rankedSeasons
-    .filter((s) => s.mainSeason)
-    .slice(-1)[0];
-
-  const season = search.get('season') ?? latestSeason.id;
-  const type = search.get('type') ?? 'solo';
+  const selectedSeason = search.get('season') || data.rankedSeasons.find(s => s.mainSeason)?.id || '';
 
   return (
-    <div className="container is-max-widescreen mt-2">
-      <nav className="breadcrumb" aria-label="breadcrumbs">
-        <ul>
-          <li>
-            <Link to="/">{t('common:home')}</Link>
-          </li>
-          <li className="is-active">
-            <Link to="/ranked-leaderboard">
-              {t('common:rankedLeaderboard')}
-            </Link>
-          </li>
-        </ul>
-      </nav>
+    <div className="container mx-auto max-w-7xl mt-2">
+      <div className="flex justify-between items-center mb-4">
+        <nav className="breadcrumbs text-sm">
+          <ul>
+            <li>
+              <Link to="/" className="link-hover link-primary">{t('common:home')}</Link>
+            </li>
+            <li className="text-base-content/60">
+              {t('pages:rankedLeaderboard.title')}
+            </li>
+          </ul>
+        </nav>
+      </div>
 
-      <div>
-        <div className="card mb-5">
-          <div className="card-content">
-            <div className="columns">
-              <div className="column">
-                <div className="select">
-                  <select
-                    value={season}
-                    onChange={(event) => {
-                      search.set('season', event.target.value);
-                      setSearch(search);
-                    }}
-                  >
-                    {data?.rankedSeasons.map((s) => (
-                      <option value={s.id}>{s.name}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-              <div className="column">
-                <div className="select">
-                  <select
-                    value={type}
-                    onChange={(event) => {
-                      search.set('type', event.target.value);
-                      setSearch(search);
-                    }}
-                  >
-                    <option value="solo">
-                      {t('pages:rankedLeaderboard.typeSolo')}
-                    </option>
-                    <option value="group">
-                      {t('pages:rankedLeaderboard.typeGroup')}
-                    </option>
-                  </select>
-                </div>
-              </div>
+      <div className="card bg-base-100 shadow-xl mb-6">
+        <div className="card-body">
+          <h1 className="card-title text-2xl mb-4">{t('pages:rankedLeaderboard.title')}</h1>
+          
+          <div className="form-control mb-6">
+            <label className="label">
+              <span className="label-text">Select Season</span>
+            </label>
+            <select 
+              className="select select-bordered"
+              value={selectedSeason}
+              onChange={(e) => {
+                search.set('season', e.target.value);
+                setSearch(search);
+              }}
+            >
+              {data.rankedSeasons.map((season) => (
+                <option key={season.id} value={season.id}>
+                  {season.name} {season.mainSeason && '(Main)'}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="divider"></div>
+
+          <div className="card bg-base-200">
+            <div className="card-body">
+              <h2 className="card-title">Leaderboard</h2>
+              <RankedLeaderboardTable season={selectedSeason} type="ranked" />
             </div>
           </div>
         </div>
-        <RankedLeaderboardTable season={season} type={type} />
       </div>
     </div>
   );

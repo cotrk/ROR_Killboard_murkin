@@ -13,11 +13,16 @@ export function ErrorMessage({
   const { t } = useTranslation('components');
 
   return (
-    <div className="notification is-danger">
-      <p>{t('global.errorMessage.errorWithSadSmiley')}</p>
-      {name && <pre>{name}</pre>}
-      {message && <pre>{message}</pre>}
-      {customText && customText}
+    <div className="alert alert-error">
+      <div className="flex items-start gap-2">
+        <i className="fas fa-exclamation-triangle mt-1"></i>
+        <div className="flex-1">
+          <p className="font-medium">{t('global.errorMessage.errorWithSadSmiley')}</p>
+          {name && <pre className="text-xs mt-1 bg-error/10 p-2 rounded">{name}</pre>}
+          {message && <pre className="text-xs mt-1 bg-error/10 p-2 rounded">{message}</pre>}
+          {customText && <p className="text-sm mt-1">{customText}</p>}
+        </div>
+      </div>
     </div>
   );
 }

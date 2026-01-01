@@ -1,95 +1,84 @@
-import { gql } from '@apollo/client';
+import { gql, useQuery } from '@apollo/client';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router';
-import { KillsList } from '@/components/kill/KillsList';
 import { ReactElement } from 'react';
 
 const PLAYER_FEUD = gql`
-  query GetPlayerFeud(
-    $player1Id: ID!
-    $player2Id: ID!
-    $first: Int
-    $last: Int
-    $before: String
-    $after: String
-  ) {
-    kills(
-      playerFeudFilter: { player1Id: $player1Id, player2Id: $player2Id }
-      first: $first
-      last: $last
-      before: $before
-      after: $after
-    ) {
-      nodes {
-        id
-        time
-        position {
-          zoneId
-        }
-        scenario {
+  query GetPlayerFeud($playerId: ID!) {
+    character(id: $playerId) {
+      id
+      name
+      feud {
+        enemyCharacter {
           id
-        }
-        victim {
+          name
+          career
           level
-          renownRank
-          character {
-            id
-            career
-            name
-          }
           guild {
             id
             name
           }
         }
-        attackers {
-          level
-          renownRank
-          damagePercent
-          character {
-            id
-            career
-            name
-          }
-          guild {
-            id
-            name
-          }
-        }
-      }
-      pageInfo {
-        hasNextPage
-        endCursor
-        hasPreviousPage
-        startCursor
+        kills
+        deaths
+        victoryPoints
       }
     }
   }
 `;
 
-export function PlayerFeud({
-  player1,
-  player2,
-}: {
-  player1: string;
-  player2: string;
-}): ReactElement {
-  const { t } = useTranslation('components');
+interface PlayerFeudProps {
+  playerId: string;
+}
+
+export function PlayerFeud({ playerId }: PlayerFeudProps): ReactElement {
+  const { t } = useTranslation(['common', 'character']);
+
+  const { loading, error, data } = useQuery(PLAYER_FEUD, {
+    variables: { playerId: parseInt(playerId) },
+  });
+
+  const feud = data?.character?.feud;
+
+  if (loading) return <div className="skeleton h-64"></div>;
+  if (error) return <div className="alert alert-error">Error loading player feud: {error.message}</div>;
+  if (!feud) {
+    return <div className="alert alert-info">No feud data available</div>;
+  }
 
   return (
-    <div className="mt-3">
-      <div className="is-size-4 is-family-secondary is-uppercase">
-        <Link to={`/character/${player1}/feud/${player2}`}>
-          {t('playerFeud.title')}
-        </Link>
+    <div className="card bg-base-100 shadow-xl">
+      <div className="card-body">
+        <h2 className="card-title">Player Feud</h2>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="text-center">
+            <h3 className="text-lg font-bold mb-2">Your Character</h3>
+            <div className="text-2xl font-bold">{data.character.name}</div>
+          </div>
+          
+          <div className="text-center">
+            <h3 className="text-lg font-bold mb-2">Enemy Character</h3>
+            <div className="text-2xl font-bold">{feud.enemyCharacter.name}</div>
+          </div>
+        </div>
+        
+        <div className="divider"></div>
+        
+        <div className="stats stats-vertical lg:stats-horizontal">
+          <div className="stat">
+            <div className="stat-title">Your Kills</div>
+            <div className="stat-value text-success">{feud.kills.toLocaleString()}</div>
+          </div>
+          <div className="stat">
+            <div className="stat-title">Your Deaths</div>
+            <div className="stat-value text-error">{feud.deaths.toLocaleString()}</div>
+          </div>
+          <div className="stat">
+            <div className="stat-title">Victory Points</div>
+            <div className="stat-value text-primary">{feud.victoryPoints.toLocaleString()}</div>
+          </div>
+        </div>
       </div>
-      <KillsList
-        query={PLAYER_FEUD}
-        queryOptions={{
-          variables: { player1Id: player1, player2Id: player2 },
-        }}
-        perPage={10}
-      />
     </div>
   );
 }

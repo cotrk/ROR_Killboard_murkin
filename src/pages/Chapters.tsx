@@ -1,146 +1,85 @@
-import { Link, useSearchParams } from 'react-router';
+import { Link } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { gql, useQuery } from '@apollo/client';
-import useWindowDimensions from '@/hooks/useWindowDimensions';
-import { ChapterFilterInput, Query } from '@/__generated__/graphql';
-import { ErrorMessage } from '@/components/global/ErrorMessage';
-import { SearchBox } from '@/components/global/SearchBox';
-import { QueryPagination } from '@/components/global/QueryPagination';
+import { LoadingState } from '@/components/shared/LoadingState';
 import { ReactElement } from 'react';
-import clsx from 'clsx';
 
-const CHAPTERS = gql`
-  query GetChapters(
-    $first: Int
-    $last: Int
-    $before: String
-    $after: String
-    $where: ChapterFilterInput
-  ) {
-    chapters(
-      first: $first
-      last: $last
-      before: $before
-      after: $after
-      where: $where
-    ) {
+const CHAPTERS_LIST = gql`
+  query GetChapters {
+    chapters {
       nodes {
         id
         name
-        rank
         position {
+          x
+          y
           zone {
+            id
             name
           }
         }
-      }
-      pageInfo {
-        hasNextPage
-        endCursor
-        hasPreviousPage
-        startCursor
       }
     }
   }
 `;
 
-const getChapterNameFilter = (search: URLSearchParams): ChapterFilterInput => {
-  const name = search.get('name');
-
-  if (!name) {
-    return {};
-  }
-
-  return { name: { contains: name } };
-};
-
-const getFilters = (search: URLSearchParams): ChapterFilterInput => ({
-  ...getChapterNameFilter(search),
-});
-
 export function Chapters(): ReactElement {
-  const perPage = 15;
-  const [search, setSearch] = useSearchParams();
-  const { t } = useTranslation(['common', 'pages', 'enums']);
-  const { loading, error, data, refetch } = useQuery<Query>(CHAPTERS, {
-    variables: {
-      where: getFilters(search),
-      first: perPage,
-    },
-  });
-  const { width } = useWindowDimensions();
-  const isMobile = width <= 768;
+  const { t } = useTranslation(['common', 'pages']);
 
-  if (loading) return <progress className="progress" />;
-  if (error) return <ErrorMessage name={error.name} message={error.message} />;
-  if (data?.chapters?.nodes == null)
-    return <ErrorMessage customText={t('common:notFound')} />;
+  const { loading, error, data } = useQuery(CHAPTERS_LIST);
 
-  const entries = data.chapters.nodes;
-  const { pageInfo } = data.chapters;
+  if (loading) return <LoadingState message="Loading chapters..." />;
+  if (error) return <div className="alert alert-error">Error loading chapters: {error.message}</div>;
+  if (!data?.chapters?.nodes) return <div className="alert alert-info">No chapters found</div>;
 
   return (
-    <div className="container is-max-widescreen mt-2">
-      <nav className="breadcrumb" aria-label="breadcrumbs">
-        <ul>
-          <li>
-            <Link to="/">{t('common:home')}</Link>
-          </li>
-          <li className="is-active">
-            <Link to="/chapters">{t('pages:chapters.title')}</Link>
-          </li>
-        </ul>
-      </nav>
+    <div className="container mx-auto max-w-7xl mt-2">
+      <div className="flex justify-between items-center mb-4">
+        <nav className="breadcrumbs text-sm">
+          <ul>
+            <li>
+              <Link to="/" className="link-hover link-primary">{t('common:home')}</Link>
+            </li>
+            <li className="text-base-content/60">
+              {t('pages:chapters.title')}
+            </li>
+          </ul>
+        </nav>
+      </div>
 
-      <div className="card mb-5">
-        <div className="card-content">
-          <div className="field">
-            <label className="label">{t('pages:chapters.search')}</label>
-            <SearchBox
-              initialQuery={search.get('name') || ''}
-              onSubmit={(event) => {
-                search.set('name', event);
-                setSearch(search);
-              }}
-            />
+      <div className="card bg-base-100 shadow-xl">
+        <div className="card-body">
+          <h1 className="card-title text-2xl mb-6">{t('pages:chapters.title')}</h1>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {data.chapters.nodes.map((chapter: any) => (
+              <div key={chapter.id} className="card bg-base-200">
+                <div className="card-body">
+                  <h2 className="card-title">
+                    <Link to={`/chapter/${chapter.id}`} className="link-hover link-primary">
+                      {chapter.name}
+                    </Link>
+                  </h2>
+                  
+                  <div className="text-sm space-y-1">
+                    <div>
+                      <span className="font-medium">Location:</span>{' '}
+                      {chapter.position?.zone && (
+                        <Link to={`/zone/${chapter.position.zone.id}`} className="link-hover link-info">
+                          {chapter.position.zone.name}
+                        </Link>
+                      )}
+                    </div>
+                    <div>
+                      <span className="font-medium">Position:</span> ({chapter.position?.x}, {chapter.position?.y})
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>
-
-      <div className="table-container">
-        <table
-          className={clsx(
-            'table',
-            'is-striped',
-            'is-hoverable',
-            isMobile ? 'is-narrow' : 'is-fullwidth',
-          )}
-        >
-          <thead>
-            <tr>
-              <th>{t('pages:chapters.name')}</th>
-              <th>{t('pages:chapters.zone')}</th>
-              <th>{t('pages:chapters.rank')}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {entries.map((entry) => (
-              <tr key={entry.id}>
-                <td>
-                  <Link to={`/chapter/${entry.id}`}>{entry.name}</Link>
-                </td>
-                <td>{entry.position.zone?.name}</td>
-                <td>{entry.rank != 0 ? entry.rank : ''}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      <QueryPagination
-        pageInfo={pageInfo}
-        perPage={perPage}
-        refetch={refetch}
-      />
     </div>
   );
 }

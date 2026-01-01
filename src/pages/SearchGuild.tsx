@@ -1,131 +1,156 @@
-import { gql, useQuery } from '@apollo/client';
+import { Link } from 'react-router';
 import { useTranslation } from 'react-i18next';
-import { Link, useParams } from 'react-router';
-import { SearchBox } from '@/components/global/SearchBox';
-import { ErrorMessage } from '@/components/global/ErrorMessage';
-import useWindowDimensions from '@/hooks/useWindowDimensions';
-import { QueryPagination } from '@/components/global/QueryPagination';
-import { SearchGuildsQuery } from '../__generated__/graphql';
+import { gql, useQuery } from '@apollo/client';
+import { LoadingState } from '@/components/shared/LoadingState';
+import { GuildHeraldry } from '@/components/guild/GuildHeraldry';
 import { ReactElement } from 'react';
-import clsx from 'clsx';
+import React from 'react';
 
-const SEARCH_GUILD = gql`
-  query SearchGuilds(
-    $query: String!
-    $first: Int
-    $last: Int
-    $before: String
-    $after: String
-  ) {
-    guilds(
-      where: { name: { contains: $query } }
-      first: $first
-      last: $last
-      before: $before
-      after: $after
-    ) {
+const SEARCH_GUILDS = gql`
+  query SearchGuilds($query: String!, $first: Int = 20) {
+    guilds(where: { name: { contains: $query } }, first: $first) {
       nodes {
         id
         name
         level
-        leader {
-          id
-          level
-          name
-          renownRank
-        }
+        realm
+        heraldry
         members {
           totalCount
         }
-      }
-      pageInfo {
-        hasNextPage
-        endCursor
-        hasPreviousPage
-        startCursor
+        leader {
+          id
+          name
+          career
+          level
+        }
       }
     }
   }
 `;
 
 export function SearchGuild(): ReactElement {
-  const perPage = 15;
-
   const { t } = useTranslation(['common', 'pages']);
-  const { query } = useParams();
-  const { loading, error, data, refetch } = useQuery<SearchGuildsQuery>(
-    SEARCH_GUILD,
-    {
-      variables: { query, first: perPage },
-    },
-  );
-  const { width } = useWindowDimensions();
-  const isMobile = width <= 768;
+  const [searchQuery, setSearchQuery] = React.useState('');
+  const [debouncedQuery, setDebouncedQuery] = React.useState('');
 
-  if (loading) return <progress className="progress" />;
-  if (error) return <ErrorMessage name={error.name} message={error.message} />;
-  if (data?.guilds?.nodes == null)
-    return <ErrorMessage customText={t('common:notFound')} />;
+  // Debounce search query
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedQuery(searchQuery);
+    }, 300);
 
-  const { pageInfo } = data.guilds;
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
-  const handleSubmit = (newQuery: string): void => {
-    refetch({ query: newQuery, first: perPage });
-  };
+  const { loading, error, data } = useQuery(SEARCH_GUILDS, {
+    variables: { query: debouncedQuery, first: 20 },
+    skip: !debouncedQuery || debouncedQuery.length < 2,
+  });
 
   return (
-    <div className="container is-max-desktop mt-2">
-      <nav className="breadcrumb" aria-label="breadcrumbs">
-        <ul>
-          <li>
-            <Link to="/">{t('common:home')}</Link>
-          </li>
-          <li className="is-active">
-            <Link to="/search">{t('pages:searchPageGuild.search')}</Link>
-          </li>
-        </ul>
-      </nav>
-      <SearchBox initialQuery={query} onSubmit={handleSubmit} />
-      <div className="table-container">
-        <table
-          className={clsx(
-            'table',
-            'is-striped',
-            'is-hoverable',
-            isMobile ? 'is-narrow' : 'is-fullwidth',
-          )}
-        >
-          <thead>
-            <tr>
-              <th>{t('pages:searchPageGuild.guild')}</th>
-              <th>{t('pages:searchPageGuild.leader')}</th>
-              <th>{t('pages:searchPageGuild.members')}</th>
-              <th>{t('pages:searchPageGuild.level')}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.guilds.nodes.map((guild) => (
-              <tr key={guild.id}>
-                <td>
-                  <Link to={`/guild/${guild.id}`}>{guild.name}</Link>
-                </td>
-                <td>
-                  <Link to={`/character/${guild.leader?.id}`}>
-                    {guild.leader?.name}
-                  </Link>
-                </td>
-                <td>{guild.members?.totalCount}</td>
-                <td>{guild.level}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+    <div className="container mx-auto max-w-7xl mt-2">
+      <div className="flex justify-between items-center mb-4">
+        <nav className="breadcrumbs text-sm">
+          <ul>
+            <li>
+              <Link to="/" className="link-hover link-primary">{t('common:home')}</Link>
+            </li>
+            <li className="text-base-content/60">
+              {t('pages:searchGuild.title')}
+            </li>
+          </ul>
+        </nav>
       </div>
-      <QueryPagination
-        pageInfo={pageInfo}
-        perPage={perPage}
-        refetch={refetch}
-      />
+
+      <div className="card bg-base-100 shadow-xl">
+        <div className="card-body">
+          <h1 className="card-title text-2xl mb-6">{t('pages:searchGuild.title')}</h1>
+          
+          <div className="form-control mb-6">
+            <input
+              type="text"
+              placeholder="Search guilds..."
+              className="input input-bordered"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+            <label className="label">
+              <span className="label-text-alt">
+                Enter at least 2 characters to search
+              </span>
+            </label>
+          </div>
+
+          {loading && debouncedQuery && <LoadingState message="Searching guilds..." />}
+          
+          {error && (
+            <div className="alert alert-error">
+              Error searching guilds: {error.message}
+            </div>
+          )}
+
+          {data?.guilds?.nodes && data.guilds.nodes.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {data.guilds.nodes.map((guild: any) => (
+                <div key={guild.id} className="card bg-base-200">
+                  <div className="card-body">
+                    <div className="flex items-center gap-3 mb-4">
+                      <GuildHeraldry
+                        size="48"
+                        heraldry={guild.heraldry}
+                        realm={guild.realm}
+                      />
+                      <div className="flex-1">
+                        <h2 className="card-title text-lg">
+                          <Link to={`/guild/${guild.id}`} className="link-hover link-primary">
+                            {guild.name}
+                          </Link>
+                        </h2>
+                        <div className="text-sm space-y-1">
+                          <div>
+                            <span className="font-medium">Level:</span> {guild.level}
+                          </div>
+                          <div>
+                            <span className="font-medium">Realm:</span>{' '}
+                            <span className={guild.realm === 'Destruction' ? 'text-error' : 'text-info'}>
+                              {guild.realm}
+                            </span>
+                          </div>
+                          <div>
+                            <span className="font-medium">Members:</span> {guild.members?.totalCount || 0}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {guild.leader && (
+                      <div className="text-sm">
+                        <span className="font-medium">Leader:</span>{' '}
+                        <Link 
+                          to={`/character/${guild.leader.id}`} 
+                          className="link-hover link-info"
+                        >
+                          {guild.leader.name}
+                        </Link>
+                        <span className="text-base-content/60 ml-1">
+                          ({guild.leader.career} {guild.leader.level})
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {data?.guilds?.nodes && data.guilds.nodes.length === 0 && (
+            <div className="alert alert-info">
+              No guilds found for "{debouncedQuery}"
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

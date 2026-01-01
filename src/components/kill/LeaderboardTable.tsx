@@ -1,59 +1,90 @@
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
-import { KillLeaderboardEntry } from '@/__generated__/graphql';
-import { CareerIcon } from '@/components/CareerIcon';
-import '@/components/styles/table.scss';
+import { GuildHeraldry } from '@/components/guild/GuildHeraldry';
+import { careerIcon } from '@/utils';
+import clsx from 'clsx';
 
-export function LeaderboardTable({
-  data,
-}: {
-  data: KillLeaderboardEntry[];
-}): React.ReactElement | null {
-  const { t } = useTranslation(['common', 'components']);
+interface LeaderboardEntry {
+  rank: number;
+  kills: number;
+  character: {
+    id: string;
+    name: string;
+    career: string;
+    level: number;
+    renownRank: number;
+    guild?: {
+      id: string;
+      name: string;
+      heraldry: any;
+    };
+  };
+}
+
+interface LeaderboardTableProps {
+  data: LeaderboardEntry[];
+}
+
+export function LeaderboardTable({ data }: LeaderboardTableProps): React.ReactElement {
+  const { t } = useTranslation(['common', 'leaderboard']);
 
   return (
-    <table className="table is-striped is-hoverable is-fullwidth is-marginless">
-      <thead>
-        <tr>
-          <th>{t('components:leaderboard.rank')}</th>
-          <th>{t('components:leaderboard.player')}</th>
-          <th className="has-text-right">
-            {t('components:leaderboard.kills')}
-          </th>
-        </tr>
-      </thead>
-      <tbody>
-        {data.map((leaderboardEntry) => (
-          <tr key={leaderboardEntry.rank}>
-            <td>{leaderboardEntry.rank}</td>
-            <td>
-              <div className="media leaderboard-player-data">
-                <div className="media-left">
-                  <CareerIcon career={leaderboardEntry.character.career} />
+    <div className="overflow-x-auto">
+      <table className="table table-zebra w-full">
+        <thead>
+          <tr>
+            <th className="text-left">Rank</th>
+            <th className="text-left">Player</th>
+            <th className="text-left">Career</th>
+            <th className="text-left">Level</th>
+            <th className="text-left">Renown</th>
+            <th className="text-left">Guild</th>
+            <th className="text-left">Kills</th>
+          </tr>
+        </thead>
+        <tbody>
+          {data.map((entry) => (
+            <tr key={entry.character.id} className="hover">
+              <td className="font-bold">#{entry.rank}</td>
+              <td>
+                <div className="flex items-center gap-2">
+                  <div className="text-lg">
+                    {careerIcon(entry.character.career)}
+                  </div>
+                  <Link 
+                    to={`/character/${entry.character.id}`} 
+                    className="link-hover link-primary font-medium"
+                  >
+                    {entry.character.name}
+                  </Link>
                 </div>
-                <div className="media-content">
-                  <div className="content">
-                    <Link to={`/character/${leaderboardEntry.character.id}`}>
-                      <strong>{leaderboardEntry.character.name}</strong>
-                    </Link>
-                    <br />
-                    <Link
-                      to={`/guild/${leaderboardEntry.character.guildMembership?.guild?.id}`}
+              </td>
+              <td>{entry.character.career}</td>
+              <td>{entry.character.level}</td>
+              <td>{entry.character.renownRank}</td>
+              <td>
+                {entry.character.guild && (
+                  <div className="flex items-center gap-2">
+                    <GuildHeraldry
+                      heraldry={entry.character.guild.heraldry}
+                      realm={entry.character.guild.name}
+                      size="24"
+                    />
+                    <Link 
+                      to={`/guild/${entry.character.guild.id}`} 
+                      className="link-hover link-info text-sm"
                     >
-                      {leaderboardEntry.character.guildMembership?.guild?.name}
+                      {entry.character.guild.name}
                     </Link>
                   </div>
-                </div>
-                <div className="media-content player-rr-lvl-container">
-                  <span>Lvl {leaderboardEntry.character.level}</span>
-                  <span>RR {leaderboardEntry.character.renownRank}</span>
-                </div>
-              </div>
-            </td>
-            <td className="has-text-right">{leaderboardEntry.kills}</td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
+                )}
+              </td>
+              <td className="font-mono">{entry.kills.toLocaleString()}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }

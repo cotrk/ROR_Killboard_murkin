@@ -5,82 +5,86 @@ import { ReactElement } from 'react';
 
 const SCENARIO_KILLS = gql`
   query GetScenarioKills(
+    $scenarioId: ID!
     $first: Int
     $last: Int
     $before: String
     $after: String
-    $soloOnly: Boolean
-    $filter: KillFilterInput
+    $time: IntOperationFilterInput
   ) {
     kills(
-      where: $filter
+      where: { scenarioId: { eq: $scenarioId }, time: $time }
       first: $first
       last: $last
       before: $before
       after: $after
-      soloOnly: $soloOnly
     ) {
-      totalCount
       nodes {
         id
         time
-        position {
-          zoneId
-        }
-        scenario {
-          id
-        }
         attackers {
-          level
-          renownRank
-          damagePercent
           character {
             id
+            name
             career
-            name
+            level
+            guild {
+              id
+              name
+            }
           }
-          guild {
-            id
-            name
-          }
+          damagePercent
         }
         victim {
-          level
-          renownRank
           character {
             id
-            career
             name
+            career
+            level
+            guild {
+              id
+              name
+            }
           }
-          guild {
+          damagePercent
+        }
+        position {
+          zone {
             id
             name
           }
         }
       }
-      pageInfo {
-        hasNextPage
-        endCursor
-        hasPreviousPage
-        startCursor
-      }
+    }
+    pageInfo {
+      hasNextPage
+      endCursor
+    startCursor
     }
   }
 `;
 
-export function ScenarioKills({ id }: { id: string }): ReactElement {
-  const { t } = useTranslation('components');
+interface ScenarioKillsProps {
+  scenarioId: string;
+}
+
+export function ScenarioKills({ scenarioId }: ScenarioKillsProps): ReactElement {
+  const { t } = useTranslation(['common', 'scenarios']);
 
   return (
     <KillsList
-      title={t('scenarioKills.title')}
       query={SCENARIO_KILLS}
       queryOptions={{
         variables: {
-          filter: { instanceId: { eq: id } },
+          scenarioId,
+          first: 10,
         },
       }}
       perPage={10}
+      title="Scenario Kills"
+      showTime={true}
+      showVictim={true}
+      showKiller={true}
     />
   );
 }

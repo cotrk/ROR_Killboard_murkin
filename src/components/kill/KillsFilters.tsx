@@ -1,65 +1,37 @@
-import {
-  getUnixTime,
-  startOfMonth,
-  startOfWeek,
-  subMonths,
-  subWeeks,
-} from 'date-fns';
-import { ReactElement } from 'react';
-import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router';
-import { URLSearchParams } from 'url';
+import { useTranslation } from 'react-i18next';
+import { ReactElement } from 'react';
 
-const getPeriodFilters = (search: URLSearchParams) => {
-  const period = search.get('period');
+export interface KillsFilters {
+  soloOnly?: boolean;
+  time?: {
+    gte?: number;
+    lte?: number;
+  };
+}
 
-  switch (period) {
-    case 'thisWeek':
-      return {
-        time: {
-          gte: getUnixTime(startOfWeek(new Date(), { weekStartsOn: 1 })),
-        },
-      };
+export function getCurrentFilters(search: URLSearchParams): KillsFilters {
+  const filters: KillsFilters = {};
 
-    case 'lastWeek':
-      return {
-        time: {
-          gte: getUnixTime(
-            startOfWeek(subWeeks(new Date(), 1), { weekStartsOn: 1 }),
-          ),
-          lte: getUnixTime(startOfWeek(new Date(), { weekStartsOn: 1 })),
-        },
-      };
-
-    case 'thisMonth':
-      return {
-        time: {
-          gte: getUnixTime(startOfMonth(new Date())),
-        },
-      };
-
-    case 'lastMonth':
-      return {
-        time: {
-          gte: getUnixTime(getUnixTime(startOfMonth(subMonths(new Date(), 1)))),
-          lte: getUnixTime(startOfMonth(new Date())),
-        },
-      };
+  const soloOnly = search.get('soloOnly');
+  if (soloOnly) {
+    filters.soloOnly = soloOnly === 'true';
   }
 
-  return { time: {} };
-};
+  const timeMin = search.get('timeMin');
+  const timeMax = search.get('timeMax');
+  if (timeMin || timeMax) {
+    filters.time = {};
+    if (timeMin) {
+      filters.time.gte = parseInt(timeMin);
+    }
+    if (timeMax) {
+      filters.time.lte = parseInt(timeMax);
+    }
+  }
 
-const getSoloKillsFilters = (search: URLSearchParams) => {
-  if (search.has('soloOnly')) return { soloOnly: true };
-
-  return {};
-};
-
-export const getCurrentFilters = (search: URLSearchParams) => ({
-  ...getPeriodFilters(search),
-  ...getSoloKillsFilters(search),
-});
+  return filters;
+}
 
 export function KillsFilters(): ReactElement {
   const { t } = useTranslation('components');
@@ -67,39 +39,54 @@ export function KillsFilters(): ReactElement {
 
   const period = search.get('period') || 'all';
 
+  const handlePeriodChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    search.set('period', event.target.value);
+    setSearch(search);
+  };
+
+  const handleSoloOnlyChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    if (event.target.checked) {
+      search.set('soloOnly', 'true');
+    } else {
+      search.delete('soloOnly');
+    }
+    setSearch(search);
+  };
+
   return (
-    <div className="card mb-5">
-      <div className="card-content">
-        <div className="columns">
-          <div className="column">
-            <div className="select">
-              <select
-                value={period}
-                onChange={(event) => {
-                  search.set('period', event.target.value);
-                  setSearch(search);
-                }}
-              >
-                <option value="all">{t('killsFilters.allTime')}</option>
-                <option value="thisWeek">{t('killsFilters.thisWeek')}</option>
-                <option value="lastWeek">{t('killsFilters.lastWeek')}</option>
-                <option value="thisMonth">{t('killsFilters.thisMonth')}</option>
-                <option value="lastMonth">{t('killsFilters.lastMonth')}</option>
-              </select>
-            </div>
-          </div>
-          <div className="column">
+    <div className="card bg-base-100 shadow-xl mb-6">
+      <div className="card-body">
+        <h3 className="card-title text-lg mb-4">Kill Filters</h3>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Time Period Filter */}
+          <div className="form-control">
             <label className="label">
+              <span className="label-text">Time Period</span>
+            </label>
+            <select
+              className="select select-bordered w-full"
+              value={period}
+              onChange={handlePeriodChange}
+            >
+              <option value="all">All Time</option>
+              <option value="thisWeek">This Week</option>
+              <option value="lastWeek">Last Week</option>
+              <option value="thisMonth">This Month</option>
+              <option value="lastMonth">Last Month</option>
+            </select>
+          </div>
+
+          {/* Solo Kills Filter */}
+          <div className="form-control">
+            <label className="label cursor-pointer">
+              <span className="label-text">Solo Kills Only</span>
               <input
                 type="checkbox"
+                className="checkbox checkbox-primary"
                 checked={search.has('soloOnly')}
-                onChange={(event) => {
-                  if (event.target.checked) search.set('soloOnly', 'true');
-                  else search.delete('soloOnly');
-                  setSearch(search);
-                }}
-              />{' '}
-              {t('killsFilters.soloOnly')}
+                onChange={handleSoloOnlyChange}
+              />
             </label>
           </div>
         </div>

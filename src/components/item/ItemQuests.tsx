@@ -3,10 +3,10 @@ import { Link } from 'react-router';
 import { gql, useQuery } from '@apollo/client';
 import Tippy from '@tippyjs/react';
 import { Query } from '@/__generated__/graphql';
-import { ErrorMessage } from '@/components/global/ErrorMessage';
+import { LoadingState } from '@/components/shared/LoadingState';
 import { ItemPopup } from './ItemPopup';
 import { questTypeIcon } from '@/utils';
-import { QueryPagination } from '@/components/global/QueryPagination';
+import { ReactElement } from 'react';
 
 const ITEM_INFO = gql`
   query GetItemRewardedFromQuests(
@@ -27,30 +27,15 @@ const ITEM_INFO = gql`
         nodes {
           id
           name
-          type {
-            isGroup
-            isTravel
-            isTome
-            isRvR
-            isPlayerKill
-            isEpic
-          }
+          type
+          minLevel
+          maxLevel
+          journalEntry
+          questDescription: description
           repeatableType
-          rewardsChoice {
-            item {
-              id
-              name
-              iconUrl
-            }
-            count
-          }
-          rewardsGiven {
-            item {
-              id
-              name
-              iconUrl
-            }
-            count
+          zone {
+            id
+            name
           }
         }
         pageInfo {
@@ -64,158 +49,113 @@ const ITEM_INFO = gql`
   }
 `;
 
-export function ItemQuests({ itemId }: { itemId: string | undefined }) {
-  const perPage = 10;
-  const { t } = useTranslation(['common', 'components']);
-  const { loading, error, data, refetch } = useQuery<Query>(ITEM_INFO, {
-    variables: {
-      itemId,
-      first: perPage,
-    },
+interface ItemQuestsProps {
+  itemId: string;
+}
+
+export function ItemQuests({ itemId }: ItemQuestsProps): ReactElement {
+  const { t } = useTranslation(['common', 'items', 'quests']);
+
+  const { loading, error, data } = useQuery(ITEM_INFO, {
+    variables: { itemId, first: 20 },
   });
 
-  if (loading) return <progress className="progress" />;
-  if (error) return <ErrorMessage name={error.name} message={error.message} />;
+  if (loading) return <LoadingState message="Loading quest information..." />;
+  if (error) return <div className="alert alert-error">Error loading quests: {error.message}</div>;
+  if (!data?.item?.rewardedFromQuests?.nodes.length) {
+    return <div className="alert alert-info">No quests reward this item</div>;
+  }
 
-  const rewardedFromQuests = data?.item?.rewardedFromQuests;
-
-  if (rewardedFromQuests?.nodes == null)
-    return <ErrorMessage customText={t('common:notFound')} />;
-
-  if (rewardedFromQuests?.nodes == null) return null;
-
-  const { pageInfo } = rewardedFromQuests;
+  const quests = data.item.rewardedFromQuests.nodes;
+  const pageInfo = data.item.rewardedFromQuests.pageInfo;
 
   return (
-    <>
-      <table className="table is-striped is-fullwidth">
-        <thead>
-          <tr>
-            <th>{t('components:itemQuests.questName')}</th>
-            <th>{t('components:itemQuests.given')}</th>
-            <th>{t('components:itemQuests.choice')}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rewardedFromQuests.nodes.map((quest) => (
-            <tr key={quest.id}>
-              <td>
-                <Link to={`/quest/${quest.id}`}>
-                  <div className="icon-text">
-                    <span className="icon has-text-info">
-                      <img
-                        src={`/images/icons/${questTypeIcon(
-                          quest.type,
-                          quest.repeatableType,
-                        )}`}
-                        alt="Quest Type"
-                      />
-                    </span>
-                    <span>{quest.name}</span>
+    <div className="card bg-base-100 shadow-xl">
+      <div className="card-body">
+        <h2 className="card-title">Quest Rewards</h2>
+        
+        <div className="space-y-4">
+          {quests.map((quest: any) => (
+            <div key={quest.id} className="card bg-base-200">
+              <div className="card-body">
+                <div className="flex items-start gap-4">
+                  <div className="flex-shrink-0">
+                    <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                      <span className="text-primary text-lg font-bold">
+                        {questTypeIcon(quest.type)}
+                      </span>
+                    </div>
                   </div>
-                </Link>
-              </td>
-              <td>
-                <div className="mb-2 is-flex">
-                  {quest.rewardsGiven.slice(0, 5).map((reward) => (
-                    <div key={`${quest.id}-${reward.item.id}`}>
-                      <Tippy
-                        duration={0}
-                        placement="top"
-                        content={<ItemPopup itemId={reward.item.id} />}
+                  
+                  <div className="flex-1 min-w-0">
+                    <h3 className="card-title text-lg">
+                      <Link 
+                        to={`/quest/${quest.id}`} 
+                        className="link-hover link-primary"
                       >
-                        <div>
-                          <Link to={`/item/${reward.item.id}`}>
-                            <figure className="image is-32x32">
-                              <div style={{ position: 'relative' }}>
-                                <img
-                                  style={{
-                                    position: 'absolute',
-                                    top: 0,
-                                    left: 0,
-                                  }}
-                                  src={reward.item.iconUrl}
-                                  alt={reward.item.name}
-                                />
-                                {reward.count > 1 && (
-                                  <div
-                                    className="has-text-white"
-                                    style={{
-                                      position: 'absolute',
-                                      top: 0,
-                                      right: 4,
-                                    }}
-                                  >
-                                    {reward.count}
-                                  </div>
-                                )}
-                              </div>
-                            </figure>
-                          </Link>
-                        </div>
-                      </Tippy>
+                        {quest.name}
+                      </Link>
+                    </h3>
+                    
+                    <div className="flex flex-wrap gap-2 text-sm text-base-content/80 mb-2">
+                      <span className="badge badge-outline">
+                        {quest.type}
+                      </span>
+                      <span className="badge badge-outline">
+                        Level {quest.minLevel}-{quest.maxLevel}
+                      </span>
+                      {quest.repeatableType && quest.repeatableType !== 'NONE' && (
+                        <span className="badge badge-warning">
+                          {quest.repeatableType}
+                        </span>
+                      )}
                     </div>
-                  ))}
+
+                    {quest.journalEntry && (
+                      <div className="mb-3">
+                        <p className="text-sm text-base-content/80 italic">
+                          {quest.journalEntry}
+                        </p>
+                      </div>
+                    )}
+
+                    {quest.questDescription && (
+                      <div className="mb-3">
+                        <p className="text-sm text-base-content/70">
+                          {quest.questDescription}
+                        </p>
+                      </div>
+                    )}
+
+                    {quest.zone && (
+                      <div className="flex items-center gap-2 text-sm">
+                        <span className="font-medium">Zone:</span>
+                        <Link 
+                          to={`/zone/${quest.zone.id}`} 
+                          className="link-hover link-info"
+                        >
+                          {quest.zone.name}
+                        </Link>
+                      </div>
+                    )}
+                  </div>
                 </div>
-                {quest.rewardsGiven.length > 5 && (
-                  <div>{quest.rewardsGiven.length - 5} other items</div>
-                )}
-              </td>
-              <td>
-                <div className="mb-2 is-flex">
-                  {quest.rewardsChoice.slice(0, 5).map((reward) => (
-                    <div key={`${quest.id}-${reward.item.id}`}>
-                      <Tippy
-                        duration={0}
-                        placement="top"
-                        content={<ItemPopup itemId={reward.item.id} />}
-                      >
-                        <div>
-                          <Link to={`/item/${reward.item.id}`}>
-                            <figure className="image is-32x32">
-                              <div style={{ position: 'relative' }}>
-                                <img
-                                  style={{
-                                    position: 'absolute',
-                                    top: 0,
-                                    left: 0,
-                                  }}
-                                  src={reward.item.iconUrl}
-                                  alt={reward.item.name}
-                                />
-                                {reward.count > 1 && (
-                                  <div
-                                    className="has-text-white"
-                                    style={{
-                                      position: 'absolute',
-                                      top: 0,
-                                      right: 4,
-                                    }}
-                                  >
-                                    {reward.count}
-                                  </div>
-                                )}
-                              </div>
-                            </figure>
-                          </Link>
-                        </div>
-                      </Tippy>
-                    </div>
-                  ))}
-                </div>
-                {quest.rewardsChoice.length > 5 && (
-                  <div>{quest.rewardsChoice.length - 5} other items</div>
-                )}
-              </td>
-            </tr>
+              </div>
+            </div>
           ))}
-        </tbody>
-      </table>
-      <QueryPagination
-        pageInfo={pageInfo}
-        perPage={perPage}
-        refetch={refetch}
-      />
-    </>
+        </div>
+
+        <div className="mt-6">
+          <div className="flex justify-center gap-2">
+            {pageInfo.hasPreviousPage && (
+              <button className="btn btn-outline btn-sm">Previous</button>
+            )}
+            {pageInfo.hasNextPage && (
+              <button className="btn btn-outline btn-sm">Next</button>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }

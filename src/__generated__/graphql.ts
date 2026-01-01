@@ -107,7 +107,8 @@ export enum AbilityType {
   /** Pet abilities */
   Pet = 'PET',
   /** Tactics */
-  Tactic = 'TACTIC'
+  Tactic = 'TACTIC',
+  TauntGuard = 'TAUNT_GUARD'
 }
 
 /** Player Archetypes */
@@ -663,6 +664,10 @@ export enum CreatureSubType {
   HumanoidsOgresYhetee = 'HUMANOIDS_OGRES_YHETEE',
   HumanoidsSkavenRatOgre = 'HUMANOIDS_SKAVEN_RAT_OGRE',
   HumanoidsSkavenSkaven = 'HUMANOIDS_SKAVEN_SKAVEN',
+  LegendaryMonstersArdTaFeed = 'LEGENDARY_MONSTERS_ARD_TA_FEED',
+  LegendaryMonstersGlompDaSquigMasta = 'LEGENDARY_MONSTERS_GLOMP_DA_SQUIG_MASTA',
+  LegendaryMonstersMastaMixa = 'LEGENDARY_MONSTERS_MASTA_MIXA',
+  LegendaryMonstersWightLordSolithex = 'LEGENDARY_MONSTERS_WIGHT_LORD_SOLITHEX',
   MonstersChaosBreedsCentigor = 'MONSTERS_CHAOS_BREEDS_CENTIGOR',
   MonstersChaosBreedsChaosMutant = 'MONSTERS_CHAOS_BREEDS_CHAOS_MUTANT',
   MonstersChaosBreedsDragonOgre = 'MONSTERS_CHAOS_BREEDS_DRAGON_OGRE',

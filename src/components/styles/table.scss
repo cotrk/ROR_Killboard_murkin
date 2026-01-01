@@ -1,9 +1,7 @@
-@import '../../../node_modules/bulma/sass/utilities/mixins';
-
-$breakpoint-small: 475px;
+/* Responsive table styles for killboard - migrated from Bulma to Tailwind */
 
 .leaderboard-player-data {
-  @include until($breakpoint-small) {
+  @media (max-width: 475px) {
     display: grid;
     grid-template-columns: 40px 1fr;
     grid-template-rows: 1fr;
@@ -11,12 +9,13 @@ $breakpoint-small: 475px;
 }
 
 .player-rr-lvl-container {
-  @include until($breakpoint-small) {
-    grid-template-columns: repeat(2, 1fr);
-    grid-column-start: 2;
-  }
   font-size: 13px;
   display: grid;
   grid-template-columns: 60px;
   justify-content: end;
+  
+  @media (max-width: 475px) {
+    grid-template-columns: repeat(2, 1fr);
+    grid-column-start: 2;
+  }
 }

@@ -28,93 +28,90 @@ export const ITEM_TALISMAN_FRAGMENT = gql`
   }
 `;
 
-export const EQUIPPED_ITEM_FRAGMENT = gql`
-  fragment EquippedCharacterItem on CharacterItem {
-    equipSlot
-    talismans {
-      ...Talisman
-    }
-    item {
-      ...ItemListEntry
-    }
-  }
-  ${ITEM_TALISMAN_FRAGMENT}
-  ${ITEM_FRAGMENT}
-`;
+interface CharacterItemProps {
+  item: EquippedCharacterItemFragment;
+  talismans: TalismanFragment[];
+}
 
-export function CharacterItem({
-  item,
-  talismans = [],
-  itemsEquipped = [],
-}: {
-  item: ItemListEntryFragment;
-  talismans?: TalismanFragment[];
-  itemsEquipped?: EquippedCharacterItemFragment[];
-}): ReactElement {
-  const { t } = useTranslation(['enums']);
-  const [modalOpen, setModalOpen] = useState(false);
+export function CharacterItem({ item, talismans }: CharacterItemProps): ReactElement {
+  const { t } = useTranslation(['common', 'items']);
+  const [showPopup, setShowPopup] = useState(false);
 
-  const showModal = () => {
-    if (!modalOpen && item.name !== '') {
-      setModalOpen(true);
-    }
-  };
-
-  const hideModal = () => {
-    if (modalOpen) {
-      setModalOpen(false);
-    }
-  };
+  const matchingTalismans = talismans.filter(
+    (talisman) => talisman.item?.itemSet?.id === item.item?.itemSet?.id,
+  );
 
   return (
-    <div
-      className="my-2 is-relative is-clickable"
-      onMouseOver={showModal}
-      onMouseLeave={hideModal}
-      onFocus={showModal}
-      onBlur={hideModal}
-    >
-      <article className="media">
-        <figure className="media-left">
-          {item.id === '0' ? (
-            <figure
-              className={`${itemFigureClass(
-                item,
-              )} [item-figure] image is-64x64 m-0`} // remove [...] from item-figure to add coloured borders
-            >
-              <img src={item.iconUrl} alt={item.name} />
-            </figure>
-          ) : (
-            <Link to={`/item/${item.id}`}>
-              <figure
-                className={`${itemFigureClass(
-                  item,
-                )} [item-figure] image is-64x64 m-0`} // remove [...] from item-figure to add coloured borders
-              >
-                <img src={item.iconUrl} alt={item.name} />
-              </figure>
-            </Link>
-          )}
-        </figure>
-        {item.name && (
-          <div className="media-content">
-            <div className={`${itemNameClass(item)} has-text-weight-semi/bold`}>
-              {item.name}
+    <div className="card bg-base-100 shadow-xl">
+      <div className="card-body">
+        <div className="flex items-start gap-4">
+          <div className="avatar">
+            <div className={`w-16 h-16 rounded ${itemFigureClass(item.item)}`}>
+              <img
+                src={item.item.iconUrl}
+                alt={item.item.name}
+                className="w-full h-full object-cover"
+              />
             </div>
-            <div className="is-size-7">{t(`enums:itemSlot.${item.slot}`)}</div>
-            {item.itemLevel > 0 && (
-              <div className="is-size-7">Level {item.itemLevel}</div>
-            )}
           </div>
-        )}
-        {modalOpen && (
-          <CharacterItemPopup
-            item={item}
-            talismans={talismans}
-            itemsEquipped={itemsEquipped}
-          />
-        )}
-      </article>
+          
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-2">
+              <h3 className={`text-lg font-bold ${itemNameClass(item.item)}`}>
+                {item.item.name}
+              </h3>
+              <span className="badge badge-outline">
+                {item.item.type}
+              </span>
+            </div>
+            
+            <div className="text-sm text-base-content/80 space-y-1">
+              <div>
+                <span className="font-medium">Slot:</span> {item.equipSlot}
+              </div>
+              {item.item.careerRestriction && item.item.careerRestriction.length > 0 && (
+                <div>
+                  <span className="font-medium">Careers:</span> {item.item.careerRestriction.join(', ')}
+                </div>
+              )}
+              {item.item.itemSet && (
+                <div>
+                  <span className="font-medium">Set:</span> {item.item.itemSet.name}
+                </div>
+              )}
+            </div>
+            
+            <button
+              className="btn btn-outline btn-sm mt-2"
+              onClick={() => setShowPopup(true)}
+            >
+              View Details
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {showPopup && (
+        <div className="modal modal-open">
+          <div className="modal-box">
+            <div className="modal-action">
+              <button 
+                className="btn btn-circle btn-ghost"
+                onClick={() => setShowPopup(false)}
+              >
+                ✕
+              </button>
+            </div>
+            <div className="p-4">
+              <CharacterItemPopup 
+                item={item} 
+                itemsEquipped={[]} 
+                talismans={talismans} 
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

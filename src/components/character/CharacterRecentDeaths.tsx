@@ -19,11 +19,23 @@ const RECENT_DEATHS = gql`
       last: $last
       before: $before
       after: $after
-      soloOnly: $soloOnly
     ) {
       nodes {
         id
         time
+        attackers {
+          character {
+            id
+            name
+            career
+            level
+            guild {
+              id
+              name
+            }
+          }
+          damagePercent
+        }
         position {
           zone {
             id
@@ -34,44 +46,32 @@ const RECENT_DEATHS = gql`
           id
           name
         }
-        attackers {
-          level
-          renownRank
-          damagePercent
-          character {
-            id
-            career
-            name
-          }
-          guild {
-            id
-            name
-          }
-        }
-      }
-      pageInfo {
-        hasNextPage
-        endCursor
-        hasPreviousPage
-        startCursor
       }
     }
   }
 `;
 
-export function CharacterRecentDeaths({ id }: { id: number }): ReactElement {
-  const { t } = useTranslation('components');
+interface CharacterRecentDeathsProps {
+  characterId: string;
+}
+
+export function CharacterRecentDeaths({ characterId }: CharacterRecentDeathsProps): ReactElement {
+  const { t } = useTranslation(['common', 'character']);
 
   return (
     <KillsList
-      title={t('characterRecentDeaths.title')}
       query={RECENT_DEATHS}
       queryOptions={{
-        variables: { id, time: {} },
+        variables: {
+          id: parseInt(characterId),
+          first: 10,
+        },
       }}
       perPage={10}
-      showTime={false}
+      title="Recent Deaths"
+      showTime={true}
       showVictim={false}
+      showKiller={true}
     />
   );
 }

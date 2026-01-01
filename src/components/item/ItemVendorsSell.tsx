@@ -3,8 +3,9 @@ import { Link } from 'react-router';
 import { gql, useQuery } from '@apollo/client';
 import { GoldPrice } from '@/components/GoldPrice';
 import { Query } from '@/__generated__/graphql';
-import { ErrorMessage } from '@/components/global/ErrorMessage';
+import { LoadingState } from '@/components/shared/LoadingState';
 import { QueryPagination } from '@/components/global/QueryPagination';
+import { ReactElement } from 'react';
 
 const ITEM_INFO = gql`
   query GetItemSoldByVendors(
@@ -32,16 +33,6 @@ const ITEM_INFO = gql`
               iconUrl
             }
           }
-          creatures {
-            id
-            name
-            realm
-            spawns {
-              zone {
-                name
-              }
-            }
-          }
         }
         pageInfo {
           hasNextPage
@@ -54,111 +45,90 @@ const ITEM_INFO = gql`
   }
 `;
 
-export function ItemVendorsSell({ itemId }: { itemId: string | undefined }) {
-  const perPage = 10;
-  const { t } = useTranslation(['common', 'components']);
-  const { loading, error, data, refetch } = useQuery<Query>(ITEM_INFO, {
-    variables: {
-      itemId,
-      first: perPage,
-    },
+interface ItemVendorsSellProps {
+  itemId: string;
+}
+
+export function ItemVendorsSell({ itemId }: ItemVendorsSellProps): ReactElement {
+  const { t } = useTranslation(['common', 'items']);
+
+  const { loading, error, data } = useQuery(ITEM_INFO, {
+    variables: { itemId, first: 20 },
   });
 
-  if (loading) return <progress className="progress" />;
-  if (error) return <ErrorMessage name={error.name} message={error.message} />;
+  if (loading) return <LoadingState message="Loading vendor information..." />;
+  if (error) return <div className="alert alert-error">Error loading vendors: {error.message}</div>;
+  if (!data?.item?.soldByVendors?.nodes.length) {
+    return <div className="alert alert-info">No vendors buy this item</div>;
+  }
 
-  const vendorItems = data?.item?.soldByVendors;
-
-  if (vendorItems?.nodes == null)
-    return <ErrorMessage customText={t('common:notFound')} />;
-
-  const { pageInfo } = vendorItems;
+  const vendors = data.item.soldByVendors.nodes;
+  const pageInfo = data.item.soldByVendors.pageInfo;
 
   return (
-    <>
-      <table className="table is-striped is-fullwidth">
-        <thead>
-          <tr>
-            <th>{t('components:itemVendors.price')}</th>
-            <th>{t('components:itemVendors.creatureName')}</th>
-            <th>{t('components:itemVendors.realm')}</th>
-            <th>{t('components:itemVendors.zone')}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {vendorItems.nodes.map((vendorItem) => {
-            const numRows = vendorItem.creatures.filter(
-              (c) => c.spawns.length > 0,
-            ).length;
-
-            return vendorItem.creatures
-              .filter((creature) => creature.spawns.length > 0)
-              .map((creature, index) => (
-                <tr>
-                  {index === 0 && (
-                    <td rowSpan={numRows}>
-                      <GoldPrice price={vendorItem.price} />
-                      {vendorItem.requiredItems.map((requiredItem) => (
-                        <span key={requiredItem.item.id} className="icon-text">
-                          <figure className="image is-24x24 mx-1">
-                            <img
-                              src={requiredItem.item.iconUrl}
-                              alt="Item Icon"
-                            />
-                          </figure>
-                          <Link
-                            to={`/item/${requiredItem.item.id}`}
-                            className="mr-1"
-                          >
-                            {requiredItem.item.name}
-                          </Link>
-                          x{requiredItem.count}
-                        </span>
-                      ))}
-                    </td>
-                  )}
+    <div className="card bg-base-100 shadow-xl">
+      <div className="card-body">
+        <h2 className="card-title">Sell To Vendors</h2>
+        
+        <div className="overflow-x-auto">
+          <table className="table table-zebra w-full">
+            <thead>
+              <tr>
+                <th>Price</th>
+                <th>Required</th>
+              </tr>
+            </thead>
+            <tbody>
+              {vendors.map((vendor: any, index: number) => (
+                <tr key={index}>
                   <td>
-                    <Link to={`/creature/${creature.id}`}>
-                      {creature.name}{' '}
-                    </Link>
+                    <GoldPrice price={vendor.price} />
                   </td>
                   <td>
-                    {creature.realm === 'ORDER' && (
-                      <figure className="image is-24x24 m-0">
-                        <img
-                          src="/images/icons/scenario/order.png"
-                          width={24}
-                          height={24}
-                          alt={t('components:itemVendors.order')}
-                        />
-                      </figure>
+                    {vendor.requiredItems && vendor.requiredItems.length > 0 ? (
+                      <div className="space-y-1">
+                        {vendor.requiredItems.map((req: any, reqIndex: number) => (
+                          <div key={reqIndex} className="flex items-center gap-2 text-sm">
+                            <div className="avatar">
+                              <div className="w-6 h-6 rounded">
+                                <img
+                                  src={req.item.iconUrl}
+                                  alt={req.item.name}
+                                  className="object-cover"
+                                />
+                              </div>
+                            </div>
+                            <span>{req.count}x</span>
+                            <Link 
+                              to={`/item/${req.item.id}`} 
+                              className="link-hover link-info truncate max-w-20"
+                            >
+                              {req.item.name}
+                            </Link>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-base-content/60">None</span>
                     )}
-                    {creature.realm === 'DESTRUCTION' && (
-                      <figure className="image is-24x24 m-0">
-                        <img
-                          src="/images/icons/scenario/destruction.png"
-                          width={24}
-                          height={24}
-                          alt={t('components:itemVendors.destruction')}
-                        />
-                      </figure>
-                    )}
-                  </td>
-                  <td>
-                    {creature.spawns
-                      .map((creatureSpawn) => creatureSpawn.zone.name)
-                      .join(', ')}
                   </td>
                 </tr>
-              ));
-          })}
-        </tbody>
-      </table>
-      <QueryPagination
-        pageInfo={pageInfo}
-        refetch={refetch}
-        perPage={perPage}
-      />
-    </>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="mt-4">
+          <div className="flex justify-center gap-2">
+            {pageInfo.hasPreviousPage && (
+              <button className="btn btn-outline btn-sm">Previous</button>
+            )}
+            {pageInfo.hasNextPage && (
+              <button className="btn btn-outline btn-sm">Next</button>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }

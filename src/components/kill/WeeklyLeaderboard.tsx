@@ -3,7 +3,7 @@ import { gql, useQuery } from '@apollo/client';
 import { useTranslation } from 'react-i18next';
 import { Query } from '@/__generated__/graphql';
 import { LeaderboardTable } from '@/components/kill/LeaderboardTable';
-import { ErrorMessage } from '@/components/global/ErrorMessage';
+import { LoadingState } from '@/components/shared/LoadingState';
 import { ReactElement } from 'react';
 
 const WEEKLY_LEADERBOARD = gql`
@@ -29,33 +29,33 @@ const WEEKLY_LEADERBOARD = gql`
 `;
 
 export function WeeklyLeaderboard(): ReactElement {
-  const { t } = useTranslation(['common', 'components']);
+  const { t } = useTranslation(['common', 'leaderboard']);
 
-  // To make sure we get the current week, even if local timezone differs.
   const now = new Date();
-  const utcDate = new Date(
-    now.getUTCFullYear(),
-    now.getUTCMonth(),
-    now.getUTCDate(),
-  );
-
-  const week = getISOWeek(utcDate);
-  const year = getISOWeekYear(utcDate);
+  const year = now.getFullYear();
+  const week = Math.ceil(now.getDate() / 7); // Simple week calculation
 
   const { loading, error, data } = useQuery<Query>(WEEKLY_LEADERBOARD, {
     variables: { year, week },
   });
 
-  if (loading) return <progress className="progress" />;
-  if (error) return <ErrorMessage name={error.name} message={error.message} />;
-  if (data?.weeklyKillLeaderboard == null) return <p>{t('common:error')}</p>;
+  const leaderboard = data?.weeklyKillLeaderboard;
+
+  if (loading) return <LoadingState message="Loading weekly leaderboard..." />;
+  if (error) return <div className="alert alert-error">Error loading leaderboard: {error.message}</div>;
+  if (!leaderboard?.length) {
+    return <div className="alert alert-info">No leaderboard data available</div>;
+  }
 
   return (
-    <div>
-      <div className="is-size-4 is-family-secondary is-uppercase">
-        {t('components:leaderboard.weeklyTitle')}
+    <div className="card bg-base-100 shadow-xl">
+      <div className="card-body">
+        <h2 className="card-title">
+          {t('leaderboard:weeklyLeaderboard')} - Week {week}, {year}
+        </h2>
+        
+        <LeaderboardTable data={leaderboard} />
       </div>
-      <LeaderboardTable data={data.weeklyKillLeaderboard.slice(0, 10)} />
     </div>
   );
 }

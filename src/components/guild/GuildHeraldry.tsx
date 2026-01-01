@@ -1,27 +1,57 @@
-import {
-  GuildHeraldry as GuildHeraldryType,
-  Realm,
-} from '../../__generated__/graphql';
-import { ReactElement } from 'react';
-import clsx from 'clsx';
+import React from 'react';
 
-export function GuildHeraldry({
-  size,
-  heraldry,
-  realm,
-}: {
+interface GuildHeraldryProps {
+  heraldry: {
+    emblem: string;
+    pattern: string;
+    color1: string;
+    color2: string;
+    shape: string;
+  } | null;
+  realm: string;
   size: '24' | '32' | '48' | '64' | '128';
-  heraldry: GuildHeraldryType;
-  realm: Realm;
-}): ReactElement {
-  const realmNum = realm === 'ORDER' ? 1 : 2;
+}
+
+export function GuildHeraldry({ heraldry, realm, size }: GuildHeraldryProps): React.ReactElement {
+  const sizeClass = {
+    '24': 'w-6 h-6',
+    '32': 'w-8 h-8',
+    '48': 'w-12 h-12',
+    '64': 'w-16 h-16',
+    '128': 'w-32 h-32',
+  }[size];
+
+  const realmColors = {
+    'destruction': 'bg-red-500',
+    'order': 'bg-blue-500',
+  };
+
+  if (!heraldry) {
+    return (
+      <div className={`${sizeClass} bg-base-300 rounded flex items-center justify-center`}>
+        <span className="text-base-content/60 text-xs">No Heraldry</span>
+      </div>
+    );
+  }
+
+  const realmColor = realmColors[realm.toLowerCase() as keyof typeof realmColors] || 'bg-gray-500';
 
   return (
-    <figure className={clsx('image', `is-${size}x${size}`)}>
-      <img
-        src={`https://armory.returnofreckoning.com/heraldry/frame/${size}/${size}/${realmNum}/${heraldry.emblem}/${heraldry.pattern}/${heraldry.color1}/${heraldry.color2}/${heraldry.shape}`}
-        alt="Heraldry"
-      />
-    </figure>
+    <div className={`${sizeClass} ${realmColor} rounded flex items-center justify-center`}>
+      <div className="w-full h-full rounded overflow-hidden">
+        <img
+          src={`/images/heraldry/patterns/${heraldry.pattern}.png`}
+          alt={heraldry.pattern}
+          className="w-full h-full object-contain"
+        />
+        <div className="absolute inset-0 flex items-center justify-center">
+          <img
+            src={`/images/heraldry/emblems/${heraldry.emblem}.png`}
+            alt={heraldry.emblem}
+            className="w-1/2 h-1/2 object-contain"
+          />
+        </div>
+      </div>
+    </div>
   );
 }

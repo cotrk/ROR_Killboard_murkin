@@ -1,95 +1,79 @@
-import { gql } from '@apollo/client';
+import { gql, useQuery } from '@apollo/client';
 import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router';
-import { KillsList } from '@/components/kill/KillsList';
 import { ReactElement } from 'react';
 
 const GUILD_FEUD = gql`
-  query GetGuildFeud(
-    $guild1Id: ID!
-    $guild2Id: ID!
-    $first: Int
-    $last: Int
-    $before: String
-    $after: String
-  ) {
-    kills(
-      guildFeudFilter: { guild1Id: $guild1Id, guild2Id: $guild2Id }
-      first: $first
-      last: $last
-      before: $before
-      after: $after
-    ) {
-      nodes {
-        id
-        time
-        position {
-          zoneId
-        }
-        scenario {
+  query GetGuildFeud($guildId: ID!) {
+    guild(id: $guildId) {
+      id
+      name
+      feud {
+        enemyGuild {
           id
+          name
+          heraldry
         }
-        victim {
-          level
-          renownRank
-          character {
-            id
-            career
-            name
-          }
-          guild {
-            id
-            name
-          }
-        }
-        attackers {
-          level
-          renownRank
-          damagePercent
-          character {
-            id
-            career
-            name
-          }
-          guild {
-            id
-            name
-          }
-        }
-      }
-      pageInfo {
-        hasNextPage
-        endCursor
-        hasPreviousPage
-        startCursor
+        kills
+        deaths
+        victoryPoints
       }
     }
   }
 `;
 
-export function GuildFeud({
-  guild1,
-  guild2,
-}: {
-  guild1: string;
-  guild2: string;
-}): ReactElement {
-  const { t } = useTranslation('components');
+interface GuildFeudProps {
+  guildId: string;
+}
+
+export function GuildFeud({ guildId }: GuildFeudProps): ReactElement {
+  const { t } = useTranslation(['common', 'guild']);
+
+  const { loading, error, data } = useQuery(GUILD_FEUD, {
+    variables: { guildId: parseInt(guildId) },
+  });
+
+  const feud = data?.guild?.feud;
+
+  if (loading) return <div className="skeleton h-64"></div>;
+  if (error) return <div className="alert alert-error">Error loading guild feud: {error.message}</div>;
+  if (!feud) {
+    return <div className="alert alert-info">No feud data available</div>;
+  }
 
   return (
-    <div className="mt-3">
-      <div className="is-size-4 is-family-secondary is-uppercase">
-        <Link to={`/guild/${guild1}/feud/${guild2}`}>
-          {t('guildFeud.title')}
-        </Link>
+    <div className="card bg-base-100 shadow-xl">
+      <div className="card-body">
+        <h2 className="card-title">Guild Feud</h2>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="text-center">
+            <h3 className="text-lg font-bold mb-2">Your Guild</h3>
+            <div className="text-2xl font-bold">{data.guild.name}</div>
+          </div>
+          
+          <div className="text-center">
+            <h3 className="text-lg font-bold mb-2">Enemy Guild</h3>
+            <div className="text-2xl font-bold">{feud.enemyGuild.name}</div>
+          </div>
+        </div>
+        
+        <div className="divider"></div>
+        
+        <div className="stats stats-vertical lg:stats-horizontal">
+          <div className="stat">
+            <div className="stat-title">Your Kills</div>
+            <div className="stat-value text-success">{feud.kills.toLocaleString()}</div>
+          </div>
+          <div className="stat">
+            <div className="stat-title">Your Deaths</div>
+            <div className="stat-value text-error">{feud.deaths.toLocaleString()}</div>
+          </div>
+          <div className="stat">
+            <div className="stat-title">Victory Points</div>
+            <div className="stat-value text-primary">{feud.victoryPoints.toLocaleString()}</div>
+          </div>
+        </div>
       </div>
-      <KillsList
-        query={GUILD_FEUD}
-        queryOptions={{
-          variables: { guild1Id: guild1, guild2Id: guild2 },
-        }}
-        perPage={10}
-      />
     </div>
   );
 }

@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Link, useParams } from 'react-router';
 import { GuildRecentDeaths } from '@/components/guild/GuildRecentDeaths';
 import { GuildRecentKills } from '@/components/guild/GuildRecentKills';
+import { LoadingState } from '@/components/shared/LoadingState';
 import { ErrorMessage } from '@/components/global/ErrorMessage';
 import { GuildMemberList } from '@/components/guild/GuildMemberList';
 import { GUILD_INFO_FRAGMENT, GuildInfo } from '@/components/guild/GuildInfo';
@@ -11,6 +12,7 @@ import { ScenarioList } from '@/components/scenario/ScenarioList';
 import { ScenarioFilters } from '@/components/scenario/ScenarioFilters';
 import { ScenarioCount } from '@/components/scenario/ScenarioCount';
 import { GuildLatestSkirmishes } from '@/components/guild/GuildLatestSkirmishes';
+import { ThemeController } from '@/components/ui/ThemeController';
 import { ReactElement } from 'react';
 import { GetGuildInfoQuery } from '@/__generated__/graphql';
 
@@ -68,72 +70,131 @@ export function Guild({
   const { t } = useTranslation(['common', 'pages']);
   const { id } = useParams();
   const { loading, error, data } = useQuery<GetGuildInfoQuery>(GUILD_INFO, {
-    variables: { id: Number(id) },
+    variables: { id },
   });
 
-  if (loading) return <progress className="progress" />;
+  if (loading) return <LoadingState />;
   if (error) return <ErrorMessage name={error.name} message={error.message} />;
   if (data?.guild == null)
     return <ErrorMessage customText={t('common:notFound')} />;
 
   return (
-    <div className="container is-max-widescreen mt-2">
-      <nav className="breadcrumb" aria-label="breadcrumbs">
-        <ul>
-          <li>
-            <Link to="/">{t('common:home')}</Link>
-          </li>
-          <li className="is-active">
-            <Link to={`/guild/${id}`}>
+    <div className="container mx-auto max-w-7xl mt-2">
+      <div className="flex justify-between items-center mb-4">
+        <nav className="breadcrumbs text-sm">
+          <ul>
+            <li>
+              <Link to="/" className="link-hover link-primary">{t('common:home')}</Link>
+            </li>
+            <li className="text-base-content/60">
               {t('pages:guildPage.guildId', { guildId: id })}
-            </Link>
-          </li>
-        </ul>
-      </nav>
-      <GuildInfo guild={data.guild} />
-      <div className="tabs">
-        <li className={tab === 'kills' ? 'is-active' : ''}>
-          <Link to={`/guild/${id}`}>{t('pages:guildPage.kills')}</Link>
-        </li>
-        <li className={tab === 'members' ? 'is-active' : ''}>
-          <Link to={`/guild/${id}/members`}>
-            {t('pages:guildPage.members')}
-          </Link>
-        </li>
-        <li className={tab === 'scenarios' ? 'is-active' : ''}>
-          <Link to={`/guild/${id}/scenarios`}>
-            {t('pages:guildPage.scenarios')}
-          </Link>
-        </li>
-        <li className={tab === 'skirmishes' ? 'is-active' : ''}>
-          <Link to={`/guild/${id}/skirmishes`}>
-            {t('pages:guildPage.skirmishes')}
-          </Link>
-        </li>
+            </li>
+          </ul>
+        </nav>
+        <ThemeController />
       </div>
-      {tab === 'kills' && (
-        <div>
-          <KillsFilters />
-          <GuildRecentKills id={Number(id)} />
-          <GuildRecentDeaths id={Number(id)} />
+      
+      <div className="card bg-base-100 shadow-xl mb-6">
+        <div className="card-body">
+          <GuildInfo guild={data.guild} />
         </div>
-      )}
-      {tab === 'members' && <GuildMemberList id={id} />}
-      {tab === 'scenarios' && (
-        <div>
-          <ScenarioFilters showPremadeOnly />
-          <div className="columns is-desktop">
-            <div className="column">
-              <ScenarioCount guildId={id} wins title="Wins" />
-            </div>
-            <div className="column">
-              <ScenarioCount guildId={id} wins={false} title="Losses" />
+      </div>
+
+      <div className="tabs tabs-boxed mb-6">
+        <Link 
+          to={`/guild/${id}`} 
+          className={`tab tab-lg ${tab === 'kills' ? 'tab-active' : ''}`}
+        >
+          {t('pages:guildPage.kills')}
+        </Link>
+        <Link 
+          to={`/guild/${id}/members`}
+          className={`tab tab-lg ${tab === 'members' ? 'tab-active' : ''}`}
+        >
+          {t('pages:guildPage.members')}
+        </Link>
+        <Link 
+          to={`/guild/${id}/scenarios`}
+          className={`tab tab-lg ${tab === 'scenarios' ? 'tab-active' : ''}`}
+        >
+          {t('pages:guildPage.scenarios')}
+        </Link>
+        <Link 
+          to={`/guild/${id}/skirmishes`}
+          className={`tab tab-lg ${tab === 'skirmishes' ? 'tab-active' : ''}`}
+        >
+          {t('pages:guildPage.skirmishes')}
+        </Link>
+      </div>
+
+      {tab === 'kills' && (
+        <>
+          <div className="card bg-base-100 shadow-xl mb-6">
+            <div className="card-body">
+              <KillsFilters />
             </div>
           </div>
-          <ScenarioList guildId={id} />
+          
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="card bg-base-100 shadow-xl">
+              <div className="card-body">
+                <h3 className="card-title text-primary mb-4">Recent Kills</h3>
+                <GuildRecentKills id={Number(id)} />
+              </div>
+            </div>
+            <div className="card bg-base-100 shadow-xl">
+              <div className="card-body">
+                <h3 className="card-title text-secondary mb-4">Recent Deaths</h3>
+                <GuildRecentDeaths id={Number(id)} />
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+      {tab === 'members' && (
+        <div className="card bg-base-100 shadow-xl">
+          <div className="card-body">
+            <GuildMemberList id={id} />
+          </div>
         </div>
       )}
-      {tab === 'skirmishes' && <GuildLatestSkirmishes guildId={id} />}
+      {tab === 'scenarios' && (
+        <>
+          <div className="card bg-base-100 shadow-xl mb-6">
+            <div className="card-body">
+              <ScenarioFilters showPremadeOnly />
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+            <div className="card bg-base-100 shadow-xl">
+              <div className="card-body">
+                <h3 className="card-title text-success mb-4">Wins</h3>
+                <ScenarioCount guildId={id} wins title="Wins" />
+              </div>
+            </div>
+            <div className="card bg-base-100 shadow-xl">
+              <div className="card-body">
+                <h3 className="card-title text-error mb-4">Losses</h3>
+                <ScenarioCount guildId={id} wins={false} title="Losses" />
+              </div>
+            </div>
+          </div>
+          
+          <div className="card bg-base-100 shadow-xl">
+            <div className="card-body">
+              <ScenarioList guildId={id} />
+            </div>
+          </div>
+        </>
+      )}
+      {tab === 'skirmishes' && (
+        <div className="card bg-base-100 shadow-xl">
+          <div className="card-body">
+            <GuildLatestSkirmishes guildId={id} />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

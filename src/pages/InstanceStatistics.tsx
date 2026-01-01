@@ -1,117 +1,145 @@
-import { gql, useQuery } from '@apollo/client';
-import { useTranslation } from 'react-i18next';
 import { Link, useParams } from 'react-router';
-import { ErrorMessage } from '@/components/global/ErrorMessage';
-import { Query } from '@/__generated__/graphql';
-import useWindowDimensions from '@/hooks/useWindowDimensions';
-import clsx from 'clsx';
+import { useTranslation } from 'react-i18next';
+import { gql, useQuery } from '@apollo/client';
+import { LoadingState } from '@/components/shared/LoadingState';
 import { InstanceEncounterRunsFilters } from '@/components/instance_statistics/InstanceEncounterRunsFilters';
 import { InstanceEncounterStatistics } from '@/components/instance_statistics/InstanceEncounterStatistics';
+import { ReactElement } from 'react';
 
 const INSTANCE_STATISTICS = gql`
-  query InstanceEncounters($id: ID!) {
+  query GetInstanceStatistics($id: ID!) {
     instance(id: $id) {
       id
       name
-      encounters {
+      scenario {
         id
         name
+      }
+      encounters {
+        nodes {
+          id
+          name
+          statistics {
+            totalRuns
+            averageDuration
+            successRate
+            averageKills
+            averageDeaths
+          }
+        }
       }
     }
   }
 `;
 
-export function InstanceStatistics() {
-  const { id } = useParams();
+export function InstanceStatistics(): ReactElement {
   const { t } = useTranslation(['common', 'pages']);
-  const { data, error, loading } = useQuery<Query>(INSTANCE_STATISTICS, {
-    variables: {
-      id,
-    },
+  const { id } = useParams<{ id: string }>();
+
+  const { loading, error, data } = useQuery(INSTANCE_STATISTICS, {
+    variables: { id },
   });
-  const { width } = useWindowDimensions();
-  const isMobile = width <= 768;
 
-  if (loading || !data?.instance?.encounters)
-    return <progress className="progress" />;
-  if (error) return <ErrorMessage name={error.name} message={error.message} />;
+  if (loading) return <LoadingState message="Loading instance statistics..." />;
+  if (error) return <div className="alert alert-error">Error loading statistics: {error.message}</div>;
+  if (!data?.instance) return <div className="alert alert-info">Instance not found</div>;
 
-  const { instance } = data;
+  const instance = data.instance;
 
   return (
-    <div className="container is-max-widescreen mt-2">
-      <nav className="breadcrumb" aria-label="breadcrumbs">
-        <ul>
-          <li>
-            <Link to="/">{t('common:home')}</Link>
-          </li>
-          <li>
-            <Link to="/instances/">{t('common:instances')}</Link>
-          </li>
-          <li className="is-active">
-            <Link to={`/instance-statistics/${id}`}>
-              {t('pages:instanceRun.title', { id })}
-            </Link>
-          </li>
-        </ul>
-      </nav>
+    <div className="container mx-auto max-w-7xl mt-2">
+      <div className="flex justify-between items-center mb-4">
+        <nav className="breadcrumbs text-sm">
+          <ul>
+            <li>
+              <Link to="/" className="link-hover link-primary">{t('common:home')}</Link>
+            </li>
+            <li>
+              <Link to="/instances" className="link-hover link-primary">{t('pages:instances.title')}</Link>
+            </li>
+            <li>
+              <Link to={`/instance/${instance.id}`} className="link-hover link-primary">
+                {instance.name}
+              </Link>
+            </li>
+            <li className="text-base-content/60">
+              {t('pages:instanceStatistics.title')}
+            </li>
+          </ul>
+        </nav>
+      </div>
 
-      <p className="is-size-4">
-        <strong>{instance.name}</strong>
-      </p>
+      <div className="card bg-base-100 shadow-xl mb-6">
+        <div className="card-body">
+          <h1 className="card-title text-2xl mb-4">{instance.name} - Statistics</h1>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div className="stat">
+              <div className="stat-title">Instance</div>
+              <div className="stat-value text-lg">{instance.name}</div>
+            </div>
+            <div className="stat">
+              <div className="stat-title">Scenario</div>
+              <div className="stat-value text-lg">{instance.scenario?.name}</div>
+            </div>
+          </div>
 
-      <InstanceEncounterRunsFilters />
-      <table
-        className={clsx(
-          'table',
-          'is-striped',
-          'is-hoverable',
-          'is-marginless',
-          isMobile ? 'is-narrow' : 'is-fullwidth',
-          'mb-5',
-        )}
-      >
-        <thead>
-          <tr>
-            <th>{t('pages:instanceStatistics.encounter')}</th>
-            <th>{t('pages:instanceStatistics.medianDuration')}</th>
-            <th>
-              <span className="icon mr-1">
-                <img
-                  src="/images/icons/deaths.png"
-                  width={18}
-                  height={16}
-                  alt={t('pages:instanceStatistics.medianDeaths') ?? ''}
-                  title={t('pages:instanceStatistics.medianDeaths') ?? ''}
-                />
-              </span>
-              {t('pages:instanceStatistics.medianDeaths')}
-            </th>
-            <th>
-              <span className="icon mr-1">
-                <img
-                  src="/images/icons/deaths.png"
-                  width={18}
-                  height={16}
-                  alt={t('pages:instanceStatistics.averageDeaths') ?? ''}
-                  title={t('pages:instanceStatistics.averageDeaths') ?? ''}
-                />
-              </span>
-              {t('pages:instanceStatistics.averageDeaths')}
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {data.instance.encounters.map((instanceEncounter) => (
-            <InstanceEncounterStatistics
-              key={instanceEncounter?.id}
-              name={instanceEncounter?.name ?? ''}
-              instanceId={Number(id)}
-              encounterId={Number(instanceEncounter?.id)}
-            />
-          ))}
-        </tbody>
-      </table>
+          <div className="divider"></div>
+
+          <div className="card bg-base-200 mb-6">
+            <div className="card-body">
+              <h2 className="card-title">Filters</h2>
+              <InstanceEncounterRunsFilters />
+            </div>
+          </div>
+
+          {instance.encounters && instance.encounters.nodes.length > 0 && (
+            <>
+              <h2 className="card-title mb-4">Encounter Statistics</h2>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                {instance.encounters.nodes.map((encounter: any) => (
+                  <div key={encounter.id} className="card bg-base-200">
+                    <div className="card-body">
+                      <h3 className="card-title text-lg">{encounter.name}</h3>
+                      
+                      {encounter.statistics && (
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                          <div className="stat">
+                            <div className="stat-title text-xs">Total Runs</div>
+                            <div className="stat-value text-lg">{encounter.statistics.totalRuns}</div>
+                          </div>
+                          <div className="stat">
+                            <div className="stat-title text-xs">Success Rate</div>
+                            <div className="stat-value text-lg">{encounter.statistics.successRate}%</div>
+                          </div>
+                          <div className="stat">
+                            <div className="stat-title text-xs">Avg Duration</div>
+                            <div className="stat-value text-lg">{encounter.statistics.averageDuration}s</div>
+                          </div>
+                          <div className="stat">
+                            <div className="stat-title text-xs">Avg K/D</div>
+                            <div className="stat-value text-lg">
+                              {encounter.statistics.averageKills}/{encounter.statistics.averageDeaths}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      <div className="mt-4">
+                        <InstanceEncounterStatistics 
+  name={encounter.name}
+  instanceId={instance.id}
+  encounterId={encounter.id}
+/>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

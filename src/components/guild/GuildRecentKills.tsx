@@ -3,28 +3,38 @@ import { useTranslation } from 'react-i18next';
 import { KillsList } from '@/components/kill/KillsList';
 import { ReactElement } from 'react';
 
-const RECENT_KILLS = gql`
+const RECENT_GUILD_KILLS = gql`
   query GetLatestGuildKills(
-    $id: UnsignedInt!
+    $guildId: ID!
     $first: Int
     $last: Int
     $before: String
     $after: String
     $time: IntOperationFilterInput
-    $soloOnly: Boolean
   ) {
     kills(
-      where: { killerGuildId: { eq: $id }, time: $time }
+      where: { attackers: { some: { guildId: { eq: $guildId } } }, time: $time }
       first: $first
       last: $last
       before: $before
       after: $after
-      soloOnly: $soloOnly
     ) {
-      totalCount
       nodes {
         id
         time
+        victim {
+          character {
+            id
+            name
+            career
+            level
+            guild {
+              id
+              name
+            }
+          }
+          damagePercent
+        }
         position {
           zone {
             id
@@ -35,55 +45,32 @@ const RECENT_KILLS = gql`
           id
           name
         }
-        attackers {
-          level
-          renownRank
-          damagePercent
-          character {
-            id
-            career
-            name
-          }
-          guild {
-            id
-            name
-          }
-        }
-        victim {
-          level
-          renownRank
-          character {
-            id
-            career
-            name
-          }
-          guild {
-            id
-            name
-          }
-        }
-      }
-      pageInfo {
-        hasNextPage
-        endCursor
-        hasPreviousPage
-        startCursor
       }
     }
   }
 `;
 
-export function GuildRecentKills({ id }: { id: number }): ReactElement {
-  const { t } = useTranslation('components');
+interface GuildRecentKillsProps {
+  guildId: string;
+}
+
+export function GuildRecentKills({ guildId }: GuildRecentKillsProps): ReactElement {
+  const { t } = useTranslation(['common', 'guild']);
 
   return (
     <KillsList
-      title={t('guildRecentKills.title')}
-      query={RECENT_KILLS}
+      query={RECENT_GUILD_KILLS}
       queryOptions={{
-        variables: { id, time: {} },
+        variables: {
+          guildId: parseInt(guildId),
+          first: 10,
+        },
       }}
       perPage={10}
+      title="Recent Kills"
+      showTime={true}
+      showVictim={true}
+      showKiller={true}
     />
   );
 }

@@ -1,15 +1,13 @@
 import { gql, useQuery } from '@apollo/client';
 import { useTranslation } from 'react-i18next';
 import { Link, useSearchParams } from 'react-router';
-import { SearchBox } from '@/components/global/SearchBox';
+import { SearchWithSuggestions } from '@/components/global/SearchWithSuggestions';
 import { ItemFilterInput, ItemType } from '@/__generated__/graphql';
-import { ErrorMessage } from '@/components/global/ErrorMessage';
+import { LoadingState } from '@/components/shared/LoadingState';
 import useWindowDimensions from '@/hooks/useWindowDimensions';
 import { ItemListEntry } from '@/components/item/ItemListEntry';
 import { QueryPagination } from '@/components/global/QueryPagination';
 import { ReactElement } from 'react';
-import clsx from 'clsx';
-import { ITEM_FRAGMENT } from '@/components/item/ItemIconWithPopup';
 import { SearchItemsQuery } from '@/__generated__/graphql';
 
 const SEARCH_ITEMS = gql`
@@ -32,7 +30,17 @@ const SEARCH_ITEMS = gql`
       after: $after
     ) {
       nodes {
-        ...ItemListEntry
+        id
+        name
+        type
+        slot
+        iconUrl
+        stats {
+          stat
+          value
+        }
+        careerRestriction
+        raceRestriction
       }
       pageInfo {
         hasNextPage
@@ -42,8 +50,6 @@ const SEARCH_ITEMS = gql`
       }
     }
   }
-
-  ${ITEM_FRAGMENT}
 `;
 
 const getSearchFilter = (search: URLSearchParams): ItemFilterInput => {
@@ -108,50 +114,53 @@ export function Items(): ReactElement {
   const { width } = useWindowDimensions();
   const isMobile = width <= 768;
 
-  if (loading) return <progress className="progress" />;
-  if (error) return <ErrorMessage name={error.name} message={error.message} />;
-  if (data?.items?.nodes == null)
-    return <ErrorMessage customText={t('common:notFound')} />;
+  if (loading) return <LoadingState />;
+  if (error) return <div className="alert alert-error">Error loading items: {error.message}</div>;
+  if (data?.items?.nodes == null) return <div className="alert alert-info">No items found</div>;
 
   const entries = data.items.nodes;
   const { pageInfo } = data.items;
 
   return (
-    <div className="container is-max-desktop mt-2">
-      <nav className="breadcrumb" aria-label="breadcrumbs">
-        <ul>
-          <li>
-            <Link to="/">{t('common:home')}</Link>
-          </li>
-          <li className="is-active">
-            <Link to="/items">{t('pages:items.title')}</Link>
-          </li>
-        </ul>
-      </nav>
-      <div className="card mb-5">
-        <div className="card-content">
-          <div className="field">
+    <div className="container mx-auto max-w-7xl mt-2">
+      <div className="flex justify-between items-center mb-4">
+        <nav className="breadcrumbs text-sm">
+          <ul>
+            <li>
+              <Link to="/" className="link-hover link-primary">{t('common:home')}</Link>
+            </li>
+            <li className="text-base-content/60">
+              {t('pages:items.title')}
+            </li>
+          </ul>
+        </nav>
+      </div>
+      
+      <div className="card bg-base-100 shadow-xl mb-6">
+        <div className="card-body">
+          <div className="form-control">
             <label className="label">{t('pages:items.search')}</label>
-            <SearchBox
+            <SearchWithSuggestions
               initialQuery={search.get('query') || ''}
-              onSubmit={(event) => {
-                search.set('query', event);
+              onSubmit={(query) => {
+                search.set('query', query);
                 setSearch(search);
               }}
             />
           </div>
-          <div className="columns">
-            <div className="column">
-              <div className="field">
-                <label className="label" htmlFor="type">
-                  {t('pages:items.itemType')}
-                </label>
-                <select
-                  id="type"
-                  value={search.get('type') ?? undefined}
-                  onChange={(event) => {
-                    search.set('type', event.target.value);
-                    setSearch(search);
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="form-control">
+              <label className="label" htmlFor="type">
+                {t('pages:items.itemType')}
+              </label>
+              <select
+                id="type"
+                className="select select-bordered"
+                value={search.get('type') ?? undefined}
+                onChange={(event) => {
+                  search.set('type', event.target.value);
+                  setSearch(search);
                   }}
                 >
                   <option value="all">{t('pages:items.all')}</option>
@@ -239,20 +248,20 @@ export function Items(): ReactElement {
                 </select>
               </div>
             </div>
-            <div className="column">
-              <div className="field">
-                <label className="label" htmlFor="stat">
-                  {t('pages:items.stat')}
-                </label>
-                <select
-                  id="stat"
-                  value={search.get('stat') ?? undefined}
-                  onChange={(event) => {
-                    search.set('stat', event.target.value);
-                    setSearch(search);
-                  }}
-                >
-                  <option value="any">{t('pages:items.any')}</option>
+            <div className="form-control">
+              <label className="label" htmlFor="stat">
+                {t('pages:items.stat')}
+              </label>
+              <select
+                id="stat"
+                className="select select-bordered"
+                value={search.get('stat') ?? undefined}
+                onChange={(event) => {
+                  search.set('stat', event.target.value);
+                  setSearch(search);
+                }}
+              >
+                <option value="any">{t('pages:items.any')}</option>
                   <option value="WOUNDS">{t('enums:stat.WOUNDS')}</option>
                   <option value="WEAPON_SKILL">
                     {t('enums:stat.WEAPON_SKILL')}
@@ -352,19 +361,19 @@ export function Items(): ReactElement {
                 </select>
               </div>
             </div>
-            <div className="column">
-              <div className="field">
-                <label className="label" htmlFor="career">
-                  {t('pages:items.usableByCareer')}
-                </label>
-                <select
-                  id="career"
-                  value={search.get('career') ?? undefined}
-                  onChange={(event) => {
-                    search.set('career', event.target.value);
-                    setSearch(search);
-                  }}
-                >
+            <div className="form-control">
+              <label className="label" htmlFor="career">
+                {t('pages:items.usableByCareer')}
+              </label>
+              <select
+                id="career"
+                className="select select-bordered"
+                value={search.get('career') ?? undefined}
+                onChange={(event) => {
+                  search.set('career', event.target.value);
+                  setSearch(search);
+                }}
+              >
                   <option value="all">{t('pages:items.all')}</option>
                   <option value="ARCHMAGE">{t('enums:career.ARCHMAGE')}</option>
                   <option value="BLACKGUARD">
@@ -424,25 +433,20 @@ export function Items(): ReactElement {
           </div>
         </div>
       </div>
-      <div className="table-container">
-        <table
-          className={clsx(
-            'table',
-            'is-striped',
-            'is-hoverable',
-            isMobile ? 'is-narrow' : 'is-fullwidth',
-          )}
-        >
+      
+      <div className="overflow-x-auto">
+        <table className="table table-zebra table-hover table-compact w-full">
           <thead>
             <tr>
-              <th aria-label="empty header" />
-              <th>{t('pages:items.name')}</th>
-              <th>{t('pages:items.itemType')}</th>
-              <th>{t('pages:items.slot')}</th>
+              <th></th>
+              <th className="text-left">{t('pages:items.name')}</th>
+              <th className="text-left">{t('pages:items.itemType')}</th>
+              <th className="text-left">{t('pages:items.slot')}</th>
+              <th className="text-left">{t('pages:items.stats')}</th>
             </tr>
           </thead>
           <tbody>
-            {entries.map((entry) => (
+            {entries?.map((entry) => (
               <ItemListEntry key={entry.id} item={entry} />
             ))}
           </tbody>

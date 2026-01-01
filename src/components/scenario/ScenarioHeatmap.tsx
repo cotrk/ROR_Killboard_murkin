@@ -2,7 +2,7 @@ import { gql, useQuery } from '@apollo/client';
 import { useTranslation } from 'react-i18next';
 import _ from 'lodash';
 import { Query } from '@/__generated__/graphql';
-import { ErrorMessage } from '@/components/global/ErrorMessage';
+import { LoadingState } from '@/components/shared/LoadingState';
 import { ZoneHeatmap } from '@/components/ZoneHeatmap';
 import { ReactElement } from 'react';
 
@@ -23,35 +23,36 @@ export function ScenarioHeatmap({
   zoneId: string;
   id: string;
 }): ReactElement {
+  const { t } = useTranslation(['common', 'scenarios']);
+
   const { loading, error, data } = useQuery<Query>(SCENARIO_HEATMAP, {
     variables: {
       id,
     },
   });
 
-  const { t } = useTranslation(['common', 'components']);
+  const heatmapData = data?.killsHeatmap;
 
-  const size = 500;
-
-  if (loading) return <progress className="progress" />;
-  if (error) return <ErrorMessage name={error.name} message={error.message} />;
-  if (data?.killsHeatmap == null || data.killsHeatmap.length === 0)
-    return <ErrorMessage customText={t('common:notFound')} />;
-
-  const heatmapData = data.killsHeatmap.map(
-    (point): [number, number, number] => [
-      point.x * (size / 64) + size / 64 / 2,
-      point.y * (size / 64) + size / 64 / 2,
-      point.count,
-    ],
-  );
-
-  const max = _.maxBy(heatmapData, (d) => d[2])?.[2] || 1;
+  if (loading) return <LoadingState message="Loading heatmap..." />;
+  if (error) return <div className="alert alert-error">Error loading heatmap: {error.message}</div>;
+  if (!heatmapData?.length) {
+    return <div className="alert alert-info">No heatmap data available</div>;
+  }
 
   return (
-    <div>
-      <p className="mb-2">{t('components:scenarioHeatmap.description')}</p>
-      <ZoneHeatmap zoneId={zoneId} max={max} data={heatmapData} size={size} />
+    <div className="card bg-base-100 shadow-xl">
+      <div className="card-body">
+        <h2 className="card-title">Kill Heatmap</h2>
+        
+        <div className="w-full h-96">
+          <ZoneHeatmap 
+            zoneId={zoneId}
+            max={Math.max(...heatmapData.map(point => point.count))}
+            data={heatmapData.map(point => [point.x, point.y, point.count])}
+            size={400}
+          />
+        </div>
+      </div>
     </div>
   );
 }

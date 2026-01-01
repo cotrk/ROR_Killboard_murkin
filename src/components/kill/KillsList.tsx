@@ -3,10 +3,9 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSearchParams } from 'react-router';
 import { Query } from '@/__generated__/graphql';
-import { ErrorMessage } from '@/components/global/ErrorMessage';
+import { LoadingState } from '@/components/shared/LoadingState';
 import { getCurrentFilters } from '@/components/kill/KillsFilters';
 import { KillsListTable } from '@/components/kill/KillsListTable';
-import { QueryPagination } from '@/components/global/QueryPagination';
 
 export function KillsList({
   query,
@@ -27,45 +26,51 @@ export function KillsList({
 }): React.ReactElement | null {
   const { t } = useTranslation(['common', 'components']);
   const [search] = useSearchParams();
+  const filters = getCurrentFilters(search);
 
-  const { loading, error, data, refetch } = useQuery<Query>(query, {
-    ...queryOptions,
+  const { loading, error, data, fetchMore } = useQuery(query, {
     variables: {
-      ...queryOptions?.variables,
       first: perPage,
-      ...getCurrentFilters(search),
+      ...filters,
+      ...queryOptions?.variables,
     },
+    ...queryOptions,
   });
 
-  if (loading) return <progress className="progress" />;
-  if (error) return <ErrorMessage name={error.name} message={error.message} />;
+  if (loading) return <LoadingState message="Loading kills..." />;
+  if (error) return <div className="alert alert-error">Error loading kills: {error.message}</div>;
+  if (!data?.kills?.nodes.length) {
+    return <div className="alert alert-info">No kills found</div>;
+  }
 
-  const kills = data?.kills;
-
-  if (kills?.nodes == null) return <p>{t('common:error')}</p>;
-
-  if (kills.nodes.length === 0) return null;
-
-  const { pageInfo } = kills;
+  const kills = data.kills.nodes;
+  const pageInfo = data.kills.pageInfo;
 
   return (
-    <div>
-      {title && (
-        <div className="is-size-4 is-family-secondary is-uppercase">
-          {title} {kills.totalCount != null && kills.totalCount}
+    <div className="card bg-base-100 shadow-xl">
+      <div className="card-body">
+        {title && <h2 className="card-title">{title}</h2>}
+        
+        <div className="overflow-x-auto">
+          <KillsListTable 
+            data={kills}
+            showTime={showTime}
+            showVictim={showVictim}
+            showKiller={showKiller}
+          />
         </div>
-      )}
-      <KillsListTable
-        data={kills.nodes}
-        showTime={showTime}
-        showKiller={showKiller}
-        showVictim={showVictim}
-      />
-      <QueryPagination
-        pageInfo={pageInfo}
-        perPage={perPage}
-        refetch={refetch}
-      />
+
+        <div className="mt-4">
+          <div className="flex justify-center gap-2">
+            {pageInfo.hasPreviousPage && (
+              <button className="btn btn-outline btn-sm">Previous</button>
+            )}
+            {pageInfo.hasNextPage && (
+              <button className="btn btn-outline btn-sm">Next</button>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

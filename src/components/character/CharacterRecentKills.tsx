@@ -14,17 +14,28 @@ const RECENT_KILLS = gql`
     $soloOnly: Boolean
   ) {
     kills(
-      where: { killerCharacterId: { eq: $id }, time: $time }
+      where: { attackers: { some: { characterId: { eq: $id } } }, time: $time }
       first: $first
       last: $last
       before: $before
       after: $after
-      soloOnly: $soloOnly
     ) {
-      totalCount
       nodes {
         id
         time
+        victim {
+          character {
+            id
+            name
+            career
+            level
+            guild {
+              id
+              name
+            }
+          }
+          damagePercent
+        }
         position {
           zone {
             id
@@ -35,45 +46,31 @@ const RECENT_KILLS = gql`
           id
           name
         }
-        attackers {
-          damagePercent
-        }
-        victim {
-          level
-          renownRank
-          character {
-            id
-            career
-            name
-          }
-          guild {
-            id
-            name
-          }
-        }
-      }
-      pageInfo {
-        hasNextPage
-        endCursor
-        hasPreviousPage
-        startCursor
       }
     }
   }
 `;
 
-export function CharacterRecentKills({ id }: { id: number }): ReactElement {
-  const { t } = useTranslation('components');
+interface CharacterRecentKillsProps {
+  characterId: string;
+}
+
+export function CharacterRecentKills({ characterId }: CharacterRecentKillsProps): ReactElement {
+  const { t } = useTranslation(['common', 'character']);
 
   return (
     <KillsList
-      title={t('characterRecentKills.title')}
       query={RECENT_KILLS}
       queryOptions={{
-        variables: { id, time: {} },
+        variables: {
+          id: parseInt(characterId),
+          first: 10,
+        },
       }}
       perPage={10}
-      showTime={false}
+      title="Recent Kills"
+      showTime={true}
+      showVictim={true}
       showKiller={false}
     />
   );

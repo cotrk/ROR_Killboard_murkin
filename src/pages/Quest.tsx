@@ -1,11 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { Link, useParams } from 'react-router';
 import { gql, useQuery } from '@apollo/client';
-import Tippy from '@tippyjs/react';
-import { ErrorMessage } from '@/components/global/ErrorMessage';
-import { GoldPrice } from '@/components/GoldPrice';
-import { ItemPopup } from '@/components/item/ItemPopup';
-import { WarIcon } from '@/components/WarIcon';
 import { ReactElement } from 'react';
 import { GetQuestInfoQuery } from '@/__generated__/graphql';
 
@@ -25,303 +20,160 @@ const QUEST_INFO = gql`
       xp
       gold
       choiceCount
-      rewardsChoice {
-        count
-        item {
-          id
-          iconUrl
-          name
-        }
-      }
-      rewardsGiven {
-        count
-        item {
-          id
-          iconUrl
-          name
-        }
-      }
       description
       objectives {
         description
         count
       }
       journalEntry
-      raceRestriction
-      careerRestriction
-      minLevel
-      maxLevel
-      minRenown
-      maxRenown
-      starterCreatures {
-        id
-        name
-        realm
-      }
     }
   }
 `;
 
 export function Quest(): ReactElement {
-  const { t } = useTranslation(['common', 'pages']);
+  const { t } = useTranslation(['common', 'pages', 'quests']);
   const { id } = useParams();
+
   const { loading, error, data } = useQuery<GetQuestInfoQuery>(QUEST_INFO, {
-    variables: {
-      id,
-    },
+    variables: { id },
   });
 
-  if (loading) return <progress className="progress" />;
-  if (error) return <ErrorMessage name={error.name} message={error.message} />;
+  if (loading) return <div className="skeleton h-64"></div>;
+  if (error) return <div className="alert alert-error">Error loading quest: {error.message}</div>;
+  if (!data?.quest) return <div className="alert alert-info">Quest not found</div>;
 
-  if (data?.quest == null)
-    return <ErrorMessage customText={t('common:notFound')} />;
+  const quest = data.quest;
 
-  const { quest } = data;
+  const getQuestTypeIcon = (type: any) => {
+    if (type.isEpic) return '⭐';
+    if (type.isRvR) return '⚔️';
+    if (type.isGroup) return '👥';
+    if (type.isTravel) return '🗺️';
+    if (type.isTome) return '📖';
+    if (type.isPlayerKill) return '💀';
+    return '📋';
+  };
+
+  const getQuestTypeLabel = (type: any) => {
+    const types = [];
+    if (type.isEpic) types.push('Epic');
+    if (type.isRvR) types.push('RvR');
+    if (type.isGroup) types.push('Group');
+    if (type.isTravel) types.push('Travel');
+    if (type.isTome) types.push('Tome');
+    if (type.isPlayerKill) types.push('Player Kill');
+    return types.length > 0 ? types.join(', ') : 'Standard';
+  };
 
   return (
-    <div className="container is-max-widescreen mt-2">
-      <nav className="breadcrumb" aria-label="breadcrumbs">
-        <ul>
-          <li>
-            <Link to="/">{t('common:home')}</Link>
-          </li>
-          <li>
-            <Link to="/quests">{t('common:quests')}</Link>
-          </li>
-          <li className="is-active">
-            <div className="ml-2">
-              {t('pages:quest.questId', { questId: id })}
-            </div>
-          </li>
-        </ul>
-      </nav>
+    <div className="container mx-auto max-w-7xl mt-2">
+      <div className="flex justify-between items-center mb-4">
+        <nav className="breadcrumbs text-sm">
+          <ul>
+            <li>
+              <Link to="/" className="link-hover link-primary">{t('common:home')}</Link>
+            </li>
+            <li>
+              <Link to="/quests" className="link-hover link-primary">{t('common:quests')}</Link>
+            </li>
+            <li className="text-base-content/60">
+              {quest.name}
+            </li>
+          </ul>
+        </nav>
+      </div>
 
-      <div className="card mb-5">
-        <div className="card-content">
-          <div className="is-size-3 is-family-secondary has-text-info">
-            {quest.name}
-          </div>
-          <div className="mb-2">
-            {quest.description?.replace('|n', 'Player').replace('|c', 'Career')}
-          </div>
-
-          {quest.journalEntry && (
-            <>
-              <div className="columns is-centered">
-                <div className="column is-4">
-                  <figure>
-                    <hr />
-                  </figure>
+      {/* Quest Info Card */}
+      <div className="card bg-base-100 shadow-xl mb-6">
+        <div className="card-body">
+          <div className="flex gap-6">
+            {/* Quest Icon */}
+            <div className="flex-shrink-0">
+              <div className="avatar">
+                <div className="w-24 h-24 rounded-lg bg-base-200 flex items-center justify-center text-6xl">
+                  {getQuestTypeIcon(quest.type)}
                 </div>
               </div>
-              <div className="mb-2">
-                {quest.journalEntry
-                  .replace('|n', 'Player')
-                  .replace('|c', 'Career')}
+            </div>
+
+            {/* Quest Details */}
+            <div className="flex-1">
+              <h2 className="card-title text-2xl mb-2">{quest.name}</h2>
+              
+              <div className="flex gap-2 mb-2">
+                <div className="badge badge-outline">
+                  {getQuestTypeLabel(quest.type)}
+                </div>
+                {quest.choiceCount > 0 && (
+                  <div className="badge badge-primary">
+                    {quest.choiceCount} Choices
+                  </div>
+                )}
               </div>
-            </>
-          )}
 
-          <div className="is-size-4 is-family-secondary has-text-info">
-            {t('pages:quest.objectives')}
+              {quest.description && (
+                <div className="prose prose-sm max-w-none mb-4">
+                  <p>{quest.description}</p>
+                </div>
+              )}
+            </div>
           </div>
 
-          <div className="mb-3">
-            {quest.objectives.map((objective) => (
-              <div className="icon-text">
-                <span className="icon has-text-info">
-                  <img
-                    src="/images/icons/quest_blue.png"
-                    alt="Quest Objective"
-                  />
-                </span>
-                <span>
-                  {objective.description
-                    .replace('|n', 'Player')
-                    .replace('|c', 'Career')}
-                  {objective.count > 1 && <span> 0 of {objective.count}</span>}
-                </span>
-              </div>
-            ))}
-          </div>
-
-          <div className="is-size-4 is-family-secondary has-text-info">
-            {t('pages:quest.rewards')}
-          </div>
-
-          <div className="mb-2 is-flex">
-            {quest.xp > 0 && (
-              <div>
-                <Tippy
-                  duration={0}
-                  placement="right"
-                  content={
-                    <div className="tooltip-popup">
-                      <div className="is-size-5 is-family-secondary has-text-info">
-                        {t('pages:quest.xp')}
-                      </div>
-                      <div>{quest.xp}</div>
+          {/* Quest Objectives */}
+          {quest.objectives && quest.objectives.length > 0 && (
+            <div className="mt-6">
+              <h3 className="text-lg font-bold mb-4">Objectives</h3>
+              <div className="space-y-2">
+                {quest.objectives.map((objective, index) => (
+                  <div key={index} className="flex items-center gap-3 p-3 bg-base-200 rounded">
+                    <div className="w-6 h-6 rounded-full bg-primary text-primary-content flex items-center justify-center text-sm font-bold">
+                      {objective.count}
                     </div>
-                  }
-                >
-                  <div>
-                    <WarIcon icon={35} size={48} alt={t('pages:quest.money')} />
-                  </div>
-                </Tippy>
-              </div>
-            )}
-            {quest.gold > 0 && (
-              <div>
-                <Tippy
-                  duration={0}
-                  placement="right"
-                  content={
-                    <div className="tooltip-popup">
-                      <div className="is-size-5 is-family-secondary has-text-info">
-                        {t('pages:quest.money')}
-                      </div>
-                      <div>
-                        <GoldPrice price={quest.gold} />
-                      </div>
-                    </div>
-                  }
-                >
-                  <div>
-                    <WarIcon icon={34} size={48} alt={t('pages:quest.money')} />
-                  </div>
-                </Tippy>
-              </div>
-            )}
-            {quest.rewardsGiven.map((reward) => (
-              <div key={`${quest.id}-${reward.item.id}`}>
-                <Tippy
-                  duration={0}
-                  placement="top"
-                  content={<ItemPopup itemId={reward.item.id} />}
-                >
-                  <div>
-                    <Link to={`/item/${reward.item.id}`}>
-                      <figure className="image is-48x48">
-                        <div style={{ position: 'relative' }}>
-                          <img
-                            style={{
-                              position: 'absolute',
-                              top: 0,
-                              left: 0,
-                            }}
-                            src={reward.item.iconUrl}
-                            alt={reward.item.name}
-                          />
-                          {reward.count > 1 && (
-                            <div
-                              className="has-text-white"
-                              style={{
-                                position: 'absolute',
-                                top: 0,
-                                right: 6,
-                              }}
-                            >
-                              {reward.count}
-                            </div>
-                          )}
-                        </div>
-                      </figure>
-                    </Link>
-                  </div>
-                </Tippy>
-              </div>
-            ))}
-          </div>
-
-          {quest.choiceCount > 0 && quest.rewardsChoice.length > 0 && (
-            <>
-              <div className="is-size-4 is-family-secondary has-text-info">
-                {t('pages:quest.choiceCount', { count: quest.choiceCount })}
-              </div>
-
-              <div className="mb-2 is-flex">
-                {quest.rewardsChoice.map((reward) => (
-                  <div key={`${quest.id}-${reward.item.id}`}>
-                    <Tippy
-                      duration={0}
-                      placement="top"
-                      content={<ItemPopup itemId={reward.item.id} />}
-                    >
-                      <div>
-                        <Link to={`/item/${reward.item.id}`}>
-                          <figure className="image is-48x48">
-                            <div style={{ position: 'relative' }}>
-                              <img
-                                style={{
-                                  position: 'absolute',
-                                  top: 0,
-                                  left: 0,
-                                }}
-                                src={reward.item.iconUrl}
-                                alt={reward.item.name}
-                              />
-                              {reward.count > 1 && (
-                                <div
-                                  className="has-text-white"
-                                  style={{
-                                    position: 'absolute',
-                                    top: 0,
-                                    right: 6,
-                                  }}
-                                >
-                                  {reward.count}
-                                </div>
-                              )}
-                            </div>
-                          </figure>
-                        </Link>
-                      </div>
-                    </Tippy>
+                    <span>{objective.description}</span>
                   </div>
                 ))}
               </div>
-            </>
+            </div>
           )}
 
-          <div className="is-size-4 is-family-secondary has-text-info">
-            {t('pages:quest.questGivers')}
+          {/* Quest Rewards */}
+          <div className="mt-6">
+            <h3 className="text-lg font-bold mb-4">Rewards</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {quest.xp && (
+                <div className="stat">
+                  <div className="stat-title">Experience</div>
+                  <div className="stat-value text-success">{quest.xp}</div>
+                </div>
+              )}
+              
+              {quest.gold && (
+                <div className="stat">
+                  <div className="stat-title">Gold</div>
+                  <div className="stat-value text-warning">{quest.gold}</div>
+                </div>
+              )}
+              
+              {quest.choiceCount > 0 && (
+                <div className="stat">
+                  <div className="stat-title">Choices</div>
+                  <div className="stat-value text-primary">{quest.choiceCount}</div>
+                </div>
+              )}
+            </div>
           </div>
-          <div>
-            {quest.starterCreatures.map((creature) => (
-              <div className="icon-text">
-                <span className="icon has-text-info">
-                  {creature.realm === 'ORDER' && (
-                    <img
-                      src="/images/icons/scenario/order.png"
-                      width={24}
-                      height={24}
-                      alt={t('comon:realmOrder')}
-                    />
-                  )}
-                  {creature.realm === 'DESTRUCTION' && (
-                    <img
-                      src="/images/icons/scenario/destruction.png"
-                      width={24}
-                      height={24}
-                      alt={t('components:realmDestruction')}
-                    />
-                  )}
-                  {creature.realm === 'NEUTRAL' && (
-                    <img
-                      src="/images/icons/quest_green.png"
-                      width={24}
-                      height={24}
-                      alt={t('components:realmNeutral')}
-                    />
-                  )}
-                </span>
-                <span>
-                  <Link to={`/creature/${creature.id}`}>{creature.name}</Link>
-                </span>
+
+          {/* Journal Entry */}
+          {quest.journalEntry && (
+            <div className="mt-6">
+              <h3 className="text-lg font-bold mb-4">Journal Entry</h3>
+              <div className="card bg-base-200">
+                <div className="card-body p-4">
+                  <p className="text-base-content/80 italic">{quest.journalEntry}</p>
+                </div>
               </div>
-            ))}
-          </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

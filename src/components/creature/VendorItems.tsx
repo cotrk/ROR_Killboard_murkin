@@ -2,9 +2,10 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
 import { gql, useQuery } from '@apollo/client';
 import { Query } from '@/__generated__/graphql';
-import { ErrorMessage } from '@/components/global/ErrorMessage';
+import { LoadingState } from '@/components/shared/LoadingState';
 import { QueryPagination } from '@/components/global/QueryPagination';
 import { GoldPrice } from '@/components/GoldPrice';
+import { ReactElement } from 'react';
 
 const VENDOR_ITEMS = gql`
   query GetVendorItemsFromCreature(
@@ -45,78 +46,112 @@ const VENDOR_ITEMS = gql`
   }
 `;
 
-export function VendorItems({
-  creatureId,
-}: {
-  creatureId: string | undefined;
-}) {
-  const perPage = 10;
-  const { t } = useTranslation(['common', 'components']);
-  const { loading, error, data, refetch } = useQuery<Query>(VENDOR_ITEMS, {
-    variables: {
-      creatureId,
-      first: perPage,
-    },
+interface VendorItemsProps {
+  creatureId: string;
+}
+
+export function VendorItems({ creatureId }: VendorItemsProps): ReactElement {
+  const { t } = useTranslation(['common', 'items']);
+
+  const { loading, error, data, fetchMore } = useQuery(VENDOR_ITEMS, {
+    variables: { creatureId, first: 20 },
   });
 
-  if (loading) return <progress className="progress" />;
-  if (error) return <ErrorMessage name={error.name} message={error.message} />;
+  if (loading) return <LoadingState message="Loading vendor items..." />;
+  if (error) return <div className="alert alert-error">Error loading vendor items: {error.message}</div>;
+  if (!data?.creature?.vendorItems?.nodes.length) {
+    return <div className="alert alert-info">No vendor items available</div>;
+  }
 
-  const vendorItems = data?.creature?.vendorItems;
-
-  if (vendorItems?.nodes == null)
-    return <ErrorMessage customText={t('common:notFound')} />;
-
-  if (vendorItems?.nodes == null) return null;
-
-  const { pageInfo } = vendorItems;
+  const vendorItems = data.creature.vendorItems.nodes;
+  const pageInfo = data.creature.vendorItems.pageInfo;
 
   return (
-    <>
-      <table className="table is-striped is-fullwidth">
-        <thead>
-          <tr>
-            <th>{t('components:itemVendors.item')}</th>
-            <th>{t('components:itemVendors.price')}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {vendorItems.nodes.map((vendorItem) => (
-            <tr key={vendorItem.item.id}>
-              <td>
-                <span className="icon-text">
-                  <figure className="image is-24x24 mx-1">
-                    <img src={vendorItem.item.iconUrl} alt="Item Icon" />
-                  </figure>
-                  <Link to={`/item/${vendorItem.item.id}`} className="mr-1">
-                    {vendorItem.item.name}
-                  </Link>
-                  x{vendorItem.count}
-                </span>
-              </td>
-              <td>
-                <GoldPrice price={vendorItem.price} />
-                {vendorItem.requiredItems.map((requiredItem) => (
-                  <span key={requiredItem.item.id} className="icon-text">
-                    <figure className="image is-24x24 mx-1">
-                      <img src={requiredItem.item.iconUrl} alt="Item Icon" />
-                    </figure>
-                    <Link to={`/item/${requiredItem.item.id}`} className="mr-1">
-                      {requiredItem.item.name}
-                    </Link>
-                    x{requiredItem.count}
-                  </span>
-                ))}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      <QueryPagination
-        pageInfo={pageInfo}
-        refetch={refetch}
-        perPage={perPage}
-      />
-    </>
+    <div className="card bg-base-100 shadow-xl">
+      <div className="card-body">
+        <h2 className="card-title">Vendor Items</h2>
+        
+        <div className="overflow-x-auto">
+          <table className="table table-zebra w-full">
+            <thead>
+              <tr>
+                <th>Item</th>
+                <th>Quantity</th>
+                <th>Price</th>
+                <th>Required</th>
+              </tr>
+            </thead>
+            <tbody>
+              {vendorItems.map((item: any, index: number) => (
+                <tr key={index}>
+                  <td>
+                    <div className="flex items-center gap-2">
+                      <div className="avatar">
+                        <div className="w-8 h-8 rounded">
+                          <img
+                            src={item.item.iconUrl}
+                            alt={item.item.name}
+                            className="object-cover"
+                          />
+                        </div>
+                      </div>
+                      <Link 
+                        to={`/item/${item.item.id}`} 
+                        className="link-hover link-primary"
+                      >
+                        {item.item.name}
+                      </Link>
+                    </div>
+                  </td>
+                  <td>{item.count}</td>
+                  <td>
+                    <GoldPrice price={item.price} />
+                  </td>
+                  <td>
+                    {item.requiredItems && item.requiredItems.length > 0 ? (
+                      <div className="space-y-1">
+                        {item.requiredItems.map((req: any, reqIndex: number) => (
+                          <div key={reqIndex} className="flex items-center gap-2 text-sm">
+                            <div className="avatar">
+                              <div className="w-6 h-6 rounded">
+                                <img
+                                  src={req.item.iconUrl}
+                                  alt={req.item.name}
+                                  className="object-cover"
+                                />
+                              </div>
+                            </div>
+                            <span>{req.count}x</span>
+                            <Link 
+                              to={`/item/${req.item.id}`} 
+                              className="link-hover link-info truncate max-w-20"
+                            >
+                              {req.item.name}
+                            </Link>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="text-base-content/60">None</span>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="mt-4">
+          <div className="flex justify-center gap-2">
+            {pageInfo.hasPreviousPage && (
+              <button className="btn btn-outline btn-sm">Previous</button>
+            )}
+            {pageInfo.hasNextPage && (
+              <button className="btn btn-outline btn-sm">Next</button>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }

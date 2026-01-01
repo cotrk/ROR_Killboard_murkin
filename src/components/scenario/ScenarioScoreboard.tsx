@@ -12,226 +12,84 @@ export function ScenarioScoreboard({
 }: {
   entries: ScenarioScoreboardEntryFragment[];
 }): ReactElement {
-  const { items, requestSort, sortConfig } = useSortableData(entries);
+  const { items } = useSortableData(entries);
   const { t } = useTranslation(['components']);
 
-  const getClassName = (name: string) => {
-    if (!sortConfig) {
-      return '';
-    }
-    return sortConfig.key === name ? sortConfig.direction : '';
-  };
-
   return (
-    <div className="table-container">
-      <table className="table is-fullwidth">
-        <thead className="is-relative">
-          <tr>
-            <th
-              id="th-career"
-              align="left"
-              onClick={() => requestSort('character.career')}
-              className={`${getClassName('career')} is-clickable has-text-link`}
-            >
-              {t('components:scenarioScoreboard.career')}
-            </th>
-            <th
-              align="left"
-              onClick={() => requestSort('character.name')}
-              className={`${getClassName('name')} is-clickable has-text-link`}
-            >
-              {t('components:scenarioScoreboard.name')}
-            </th>
-            <th
-              colSpan={2}
-              align="left"
-              onClick={() => requestSort('guild.name')}
-              className={`${getClassName('guild')} is-clickable has-text-link`}
-            >
-              {t('components:scenarioScoreboard.guild')}
-            </th>
-            <th
-              align="left"
-              onClick={() => requestSort('level')}
-              className={`${getClassName('level')} is-clickable has-text-link`}
-            >
-              {t('components:scenarioScoreboard.rank')}
-            </th>
-            <th
-              align="left"
-              onClick={() => requestSort('kills')}
-              className={`${getClassName('kills')} is-clickable has-text-link`}
-            >
-              {t('components:scenarioScoreboard.kills')}
-            </th>
-            <th
-              align="left"
-              onClick={() => requestSort('deaths')}
-              className={`${getClassName('deaths')} is-clickable has-text-link`}
-            >
-              {t('components:scenarioScoreboard.deaths')}
-            </th>
-            <th
-              align="left"
-              onClick={() => requestSort('deathBlows')}
-              className={`${getClassName(
-                'deathBlows',
-              )} is-clickable has-text-link`}
-            >
-              {t('components:scenarioScoreboard.dbs')}
-            </th>
-            <th
-              align="left"
-              onClick={() => requestSort('damage')}
-              className={`${getClassName('damage')} is-clickable has-text-link`}
-            >
-              {t('components:scenarioScoreboard.damage')}
-            </th>
-            <th
-              align="left"
-              onClick={() => requestSort('killDamage')}
-              className={`${getClassName('killDamage')} is-clickable has-text-link`}
-            >
-              {t('components:scenarioScoreboard.killDamage')}
-            </th>
-            <th
-              align="left"
-              onClick={() => requestSort('healing')}
-              className={`${getClassName(
-                'healing',
-              )} is-clickable has-text-link`}
-            >
-              {t('components:scenarioScoreboard.healing')}
-            </th>
-            <th
-              align="left"
-              onClick={() => requestSort('protection')}
-              className={`${getClassName(
-                'protection',
-              )} is-clickable has-text-link`}
-            >
-              {t('components:scenarioScoreboard.protection')}
-            </th>
-            <th
-              align="left"
-              onClick={() => requestSort('objectiveScore')}
-              className={`${getClassName(
-                'objectiveScore',
-              )} is-clickable has-text-link`}
-            >
-              {t('components:scenarioScoreboard.objectiveScore')}
-            </th>
-          </tr>
-        </thead>
-        <tbody>
-          {items.map((entry: ScenarioScoreboardEntryFragment) => (
-            <tr
-              key={entry.character.id}
-              className={`scenario-scoreboard-row-team-${entry.team}`}
-            >
-              <td aria-labelledby="th-career">
-                <CareerIcon career={entry.character.career} />
-              </td>
-              <td>
-                <Link to={`/character/${entry.character.id}`}>
-                  {entry.character.name}
-                </Link>
-              </td>
-              <td>
-                {entry.guild && (
-                  <Link to={`/guild/${entry.guild.id}`}>
-                    <GuildHeraldry
-                      size="32"
-                      heraldry={entry.guild.heraldry}
-                      realm={entry.guild.realm}
-                    />
-                  </Link>
-                )}
-              </td>
-              <td>
-                {entry.guild && (
-                  <Link to={`/guild/${entry.guild.id}`}>
-                    {entry.guild.name}
-                  </Link>
-                )}
-              </td>
-              <td align="left">{entry.level}</td>
-
-              <td align="left">
-                <Tippy
-                  placement="top"
-                  content={
-                    <div className="scoreboard-tooltip">
-                      Solo Kills: {entry.killsSolo}
+    <div className="card bg-base-100 shadow-xl">
+      <div className="card-body">
+        <h2 className="card-title">Scenario Scoreboard</h2>
+        
+        <div className="overflow-x-auto">
+          <table className="table table-zebra w-full">
+            <thead className="relative">
+              <tr>
+                <th className="cursor-pointer hover:bg-base-200">
+                  Player
+                </th>
+                <th>Career</th>
+                <th>Guild</th>
+                <th className="cursor-pointer hover:bg-base-200">
+                  K/D
+                </th>
+                <th className="cursor-pointer hover:bg-base-200">
+                  Damage
+                </th>
+                <th className="cursor-pointer hover:bg-base-200">
+                  Healing
+                </th>
+                <th className="cursor-pointer hover:bg-base-200">
+                  Renown
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {items.map((entry: any, index: number) => (
+                <tr key={entry.id} className={entry.realm === 'Order' ? 'scenario-scoreboard-row-team-0' : 'scenario-scoreboard-row-team-1'}>
+                  <td className="font-bold">#{entry.rank}</td>
+                  <td>
+                    <div className="flex items-center gap-2">
+                      <CareerIcon career={entry.character.career} />
+                      <Link 
+                        to={`/character/${entry.character.id}`} 
+                        className="link-hover link-primary"
+                      >
+                        {entry.character.name}
+                      </Link>
                     </div>
-                  }
-                >
-                  <span>{entry.kills}</span>
-                </Tippy>
-              </td>
-              <td align="left">
-                <Tippy
-                  duration={0}
-                  placement="top"
-                  content={
-                    <div className="scoreboard-tooltip">
-                      Damage Receive: {entry.damageReceived}
-                      <br />
-                      Healing Received: {entry.healingReceived}
-                      <br />
-                      Protection Received: {entry.protectionReceived}
-                    </div>
-                  }
-                >
-                  <span>{entry.deaths}</span>
-                </Tippy>
-              </td>
-              <td align="left">{entry.deathBlows}</td>
-              <td align="left">
-                <span>{Number(entry.damage).toLocaleString()}</span>
-              </td>
-              <td align="left">
-                <span>{Number(entry.killDamage).toLocaleString()}</span>
-              </td>
-              <td align="left">
-                <Tippy
-                  duration={0}
-                  placement="top"
-                  content={
-                    <div className="scoreboard-tooltip">
-                      Healing of Self: {entry.healingSelf}
-                      <br />
-                      Healing of Others: {entry.healingOthers}
-                      <br />
-                      Resurrections Done: {entry.resurrectionsDone}
-                    </div>
-                  }
-                >
-                  <span>{Number(entry.healing).toLocaleString()}</span>
-                </Tippy>
-              </td>
-              <td align="left">
-                <Tippy
-                  duration={0}
-                  placement="top"
-                  content={
-                    <div className="scoreboard-tooltip">
-                      Protection of Self: {entry.protectionSelf}
-                      <br />
-                      Protection of Others: {entry.protectionOthers}
-                    </div>
-                  }
-                >
-                  <span>{Number(entry.protection).toLocaleString()}</span>
-                </Tippy>
-              </td>
-              <td align="left">
-                {Number(entry.objectiveScore).toLocaleString()}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+                  </td>
+                  <td>{entry.character.career}</td>
+                  <td>
+                    {entry.character.guild && (
+                      <div className="flex items-center gap-1">
+                        <GuildHeraldry
+                          size="24"
+                          heraldry={entry.character.guild.heraldry}
+                          realm={entry.character.guild.realm}
+                        />
+                        <Link 
+                          to={`/guild/${entry.character.guild.id}`} 
+                          className="link-hover link-info text-sm"
+                        >
+                          {entry.character.guild.name}
+                        </Link>
+                      </div>
+                    )}
+                  </td>
+                  <td className="font-mono">
+                    <span className={entry.deaths === 0 ? 'text-success' : 'text-base-content'}>
+                      {entry.kills}/{entry.deaths}
+                    </span>
+                  </td>
+                  <td className="font-mono text-sm">{entry.damageDone.toLocaleString()}</td>
+                  <td className="font-mono text-sm">{entry.healingDone.toLocaleString()}</td>
+                  <td className="font-mono">{entry.renown.toLocaleString()}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 }

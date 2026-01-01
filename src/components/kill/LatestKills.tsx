@@ -67,9 +67,9 @@ export function LatestKills(): ReactElement {
 
   return (
     <div>
-      <div className="is-size-4 is-family-secondary is-uppercase">
+      <h3 className="text-lg font-bold uppercase mb-4">
         {t('latestKills.title')}
-      </div>
+      </h3>
       <KillsList query={LATEST_KILLS} perPage={10} />
     </div>
   );

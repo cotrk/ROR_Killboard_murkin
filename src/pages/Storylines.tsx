@@ -1,75 +1,106 @@
 import { Link } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { gql, useQuery } from '@apollo/client';
-import useWindowDimensions from '@/hooks/useWindowDimensions';
-import { ErrorMessage } from '@/components/global/ErrorMessage';
+import { LoadingState } from '@/components/shared/LoadingState';
 import { ReactElement } from 'react';
-import clsx from 'clsx';
-import { GetWarJournalStorylinesQuery } from '@/__generated__/graphql';
 
-const WAR_JOURNAL_STORYLINES = gql`
-  query GetWarJournalStorylines {
-    warJournalStorylines {
-      id
-      name
+const STORYLINES_LIST = gql`
+  query GetStorylines {
+    storylines {
+      nodes {
+        id
+        name
+        description
+        chapters {
+          nodes {
+            id
+            name
+          }
+        }
+      }
     }
   }
 `;
 
 export function Storylines(): ReactElement {
-  const { t } = useTranslation(['common', 'pages', 'enums']);
-  const { loading, error, data } = useQuery<GetWarJournalStorylinesQuery>(
-    WAR_JOURNAL_STORYLINES,
-  );
-  const { width } = useWindowDimensions();
-  const isMobile = width <= 768;
+  const { t } = useTranslation(['common', 'pages']);
 
-  if (loading) return <progress className="progress" />;
-  if (error) return <ErrorMessage name={error.name} message={error.message} />;
-  if (data?.warJournalStorylines == null)
-    return <ErrorMessage customText={t('common:notFound')} />;
+  const { loading, error, data } = useQuery(STORYLINES_LIST);
 
-  const entries = data.warJournalStorylines;
+  if (loading) return <LoadingState message="Loading storylines..." />;
+  if (error) return <div className="alert alert-error">Error loading storylines: {error.message}</div>;
+  if (!data?.storylines?.nodes) return <div className="alert alert-info">No storylines found</div>;
 
   return (
-    <div className="container is-max-widescreen mt-2">
-      <nav className="breadcrumb" aria-label="breadcrumbs">
-        <ul>
-          <li>
-            <Link to="/">{t('common:home')}</Link>
-          </li>
-          <li className="is-active">
-            <Link to="/storylines">
-              {t('pages:warJournalStorylines.title')}
-            </Link>
-          </li>
-        </ul>
-      </nav>
+    <div className="container mx-auto max-w-7xl mt-2">
+      <div className="flex justify-between items-center mb-4">
+        <nav className="breadcrumbs text-sm">
+          <ul>
+            <li>
+              <Link to="/" className="link-hover link-primary">{t('common:home')}</Link>
+            </li>
+            <li className="text-base-content/60">
+              {t('pages:storylines.title')}
+            </li>
+          </ul>
+        </nav>
+      </div>
 
-      <div className="table-container">
-        <table
-          className={clsx(
-            'table',
-            'is-striped',
-            'is-hoverable',
-            isMobile ? 'is-narrow' : 'is-fullwidth',
-          )}
-        >
-          <thead>
-            <tr>
-              <th>{t('pages:warJournalStorylines.name')}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {entries.map((entry) => (
-              <tr key={entry.id}>
-                <td>
-                  <Link to={`/storylines/${entry.id}`}>{entry.name}</Link>
-                </td>
-              </tr>
+      <div className="card bg-base-100 shadow-xl">
+        <div className="card-body">
+          <h1 className="card-title text-2xl mb-6">{t('pages:storylines.title')}</h1>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {data.storylines.nodes.map((storyline: any) => (
+              <div key={storyline.id} className="card bg-base-200">
+                <div className="card-body">
+                  <h2 className="card-title">
+                    <Link to={`/storyline/${storyline.id}`} className="link-hover link-primary">
+                      {storyline.name}
+                    </Link>
+                  </h2>
+                  
+                  {storyline.description && (
+                    <div className="mb-4">
+                      <p className="text-sm text-base-content/80 line-clamp-3">
+                        {storyline.description}
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="stat">
+                    <div className="stat-title">Chapters</div>
+                    <div className="stat-value text-lg">{storyline.chapters?.nodes?.length || 0}</div>
+                  </div>
+
+                  {storyline.chapters && storyline.chapters.nodes.length > 0 && (
+                    <div className="mt-4">
+                      <h3 className="font-medium mb-2 text-sm">Chapters:</h3>
+                      <div className="space-y-1">
+                        {storyline.chapters.nodes.slice(0, 3).map((chapter: any, index: number) => (
+                          <div key={chapter.id} className="text-xs flex items-center gap-2">
+                            <span className="badge badge-primary badge-xs">#{index + 1}</span>
+                            <Link 
+                              to={`/chapter/${chapter.id}`} 
+                              className="link-hover link-info truncate"
+                            >
+                              {chapter.name}
+                            </Link>
+                          </div>
+                        ))}
+                        {storyline.chapters.nodes.length > 3 && (
+                          <div className="text-xs text-base-content/60">
+                            +{storyline.chapters.nodes.length - 3} more chapters
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
             ))}
-          </tbody>
-        </table>
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -2,8 +2,9 @@ import { gql, useQuery } from '@apollo/client';
 import { useTranslation } from 'react-i18next';
 import { Link, useParams } from 'react-router';
 import { CareerIcon } from '@/components/CareerIcon';
-import { SearchBox } from '@/components/global/SearchBox';
-import { ErrorMessage } from '@/components/global/ErrorMessage';
+import { SearchWithSuggestions } from '@/components/global/SearchWithSuggestions';
+import { LoadingState } from '@/components/shared/LoadingState';
+import { useDataQueryHandler } from '@/components/shared/ErrorBoundary';
 import useWindowDimensions from '@/hooks/useWindowDimensions';
 import { QueryPagination } from '@/components/global/QueryPagination';
 import { SearchQuery } from '../__generated__/graphql';
@@ -30,11 +31,11 @@ const SEARCH = gql`
     ) {
       nodes {
         __typename
-        id
-        name
         ... on Character {
-          level
+          id
+          name
           career
+          level
           renownRank
           guildMembership {
             guild {
@@ -44,53 +45,44 @@ const SEARCH = gql`
           }
         }
         ... on Guild {
+          id
+          name
           level
+          members {
+            totalCount
+          }
+          heraldry
           realm
           leader {
             id
             name
           }
-          heraldry {
-            emblem
-            pattern
-            color1
-            color2
-            shape
-          }
-          members {
-            totalCount
-          }
         }
         ... on Item {
-          iconUrl
-          description
+          id
+          name
           type
           slot
-          rarity
-          itemLevel
-          itemSet {
-            id
-            name
-          }
+          iconUrl
+          description
         }
         ... on Quest {
-          questType: type {
-            isGroup
-            isTravel
-            isTome
-            isRvR
-            isPlayerKill
-            isEpic
-          }
-          repeatableType
+          id
+          name
           minLevel
-          xp
-          gold
+          questType
+          repeatableType
           journalEntry
           questDescription: description
         }
         ... on Creature {
+          id
+          name
           creatureSubType
+        }
+        ... on Chapter {
+          id
+          name
         }
       }
       pageInfo {
@@ -114,10 +106,9 @@ export function Search(): ReactElement {
   const { width } = useWindowDimensions();
   const isMobile = width <= 768;
 
-  if (loading) return <progress className="progress" />;
-  if (error) return <ErrorMessage name={error.name} message={error.message} />;
-  if (data?.search?.nodes == null)
-    return <ErrorMessage customText={t('common:notFound')} />;
+  const { handleLoadingError } = useDataQueryHandler();
+  const errorElement = handleLoadingError(loading, error, data?.search?.nodes);
+  if (errorElement) return errorElement;
 
   const { pageInfo } = data.search;
 
@@ -126,63 +117,62 @@ export function Search(): ReactElement {
   };
 
   return (
-    <div className="container is-max-desktop mt-2">
-      <nav className="breadcrumb" aria-label="breadcrumbs">
-        <ul>
-          <li>
-            <Link to="/">{t('common:home')}</Link>
-          </li>
-          <li className="is-active">
-            <Link to="/search">{t('pages:searchPage.search')}</Link>
-          </li>
-        </ul>
-      </nav>
-      <SearchBox initialQuery={query} onSubmit={handleSubmit} isPlayer />
-      <div className="table-container">
-        <table
-          className={clsx(
-            'table',
-            'is-striped',
-            'is-hoverable',
-            isMobile ? 'is-narrow' : 'is-fullwidth',
-          )}
-        >
+    <div className="container mx-auto max-w-7xl mt-2">
+      <div className="flex justify-between items-center mb-4">
+        <nav className="breadcrumbs text-sm">
+          <ul>
+            <li>
+              <Link to="/" className="link-hover link-primary">{t('common:home')}</Link>
+            </li>
+            <li className="text-base-content/60">
+              {t('pages:searchPage.search')}
+            </li>
+          </ul>
+        </nav>
+      </div>
+      
+      <SearchWithSuggestions initialQuery={query} onSubmit={handleSubmit} isPlayer />
+      
+      <div className="overflow-x-auto">
+        <table className="table table-zebra table-hover table-compact w-full">
           <thead>
             <tr>
               <th></th>
-              <th>Name</th>
-              <th>Info</th>
-              <th align="right">Type</th>
+              <th className="text-left">Name</th>
+              <th className="text-left">Info</th>
+              <th className="text-right">Type</th>
             </tr>
           </thead>
           <tbody>
             {data.search.nodes.map((searchItem) => {
               if (searchItem.__typename === 'Character') {
                 return (
-                  <tr>
+                  <tr key={searchItem.id} className="hover:bg-base-200">
                     <td>
                       <CareerIcon career={searchItem.career} />
                     </td>
                     <td>
-                      <Link to={`/character/${searchItem.id}`}>
-                        <strong>{searchItem.name}</strong>
-                      </Link>
-                      <br />
-                      <Link
-                        to={`/guild/${searchItem.guildMembership?.guild?.id}`}
+                      <Link 
+                        to={`/character/${searchItem.id}`}
+                        className="font-medium hover:text-primary transition-colors"
                       >
-                        {searchItem.guildMembership?.guild?.name}
+                        {searchItem.name}
                       </Link>
+                      <div className="text-sm text-base-content/60 mt-1">
+                        <Link
+                          to={`/guild/${searchItem.guildMembership?.guild?.id}`}
+                          className="hover:text-primary transition-colors"
+                        >
+                          {searchItem.guildMembership?.guild?.name}
+                        </Link>
+                      </div>
                     </td>
-                    <td>
-                      <small>
-                        Lvl {searchItem.level}
-                        <br />
-                        RR {searchItem.renownRank}
-                      </small>
+                    <td className="text-sm text-base-content/60">
+                      <div>Lvl {searchItem.level}</div>
+                      <div>RR {searchItem.renownRank}</div>
                     </td>
-                    <td align="right">
-                      <span className="tag is-primary">
+                    <td className="text-right">
+                      <span className="badge badge-primary">
                         {searchItem.__typename}
                       </span>
                     </td>
@@ -192,7 +182,7 @@ export function Search(): ReactElement {
 
               if (searchItem.__typename === 'Guild') {
                 return (
-                  <tr>
+                  <tr key={searchItem.id} className="hover:bg-base-200">
                     <td>
                       <GuildHeraldry
                         heraldry={searchItem.heraldry}
@@ -201,24 +191,28 @@ export function Search(): ReactElement {
                       />
                     </td>
                     <td>
-                      <Link to={`/guild/${searchItem.id}`}>
-                        <strong>{searchItem.name}</strong>
+                      <Link 
+                        to={`/guild/${searchItem.id}`}
+                        className="font-medium hover:text-primary transition-colors"
+                      >
+                        {searchItem.name}
                       </Link>
-                      <br />
-                      Leader:{' '}
-                      <Link to={`/character/${searchItem.leader?.id}`}>
-                        {searchItem.leader?.name}
-                      </Link>
+                      <div className="text-sm text-base-content/60 mt-1">
+                        Leader:{' '}
+                        <Link 
+                          to={`/character/${searchItem.leader?.id}`}
+                          className="hover:text-primary transition-colors"
+                        >
+                          {searchItem.leader?.name}
+                        </Link>
+                      </div>
                     </td>
-                    <td>
-                      <small>
-                        Lvl {searchItem.level}
-                        <br />
-                        Members {searchItem.members?.totalCount}
-                      </small>
+                    <td className="text-sm text-base-content/60">
+                      <div>Lvl {searchItem.level}</div>
+                      <div>Members {searchItem.members?.totalCount}</div>
                     </td>
-                    <td align="right">
-                      <span className="tag is-primary">
+                    <td className="text-right">
+                      <span className="badge badge-primary">
                         {searchItem.__typename}
                       </span>
                     </td>
@@ -228,37 +222,35 @@ export function Search(): ReactElement {
 
               if (searchItem.__typename === 'Item') {
                 return (
-                  <tr>
+                  <tr key={searchItem.id} className="hover:bg-base-200">
                     <td>
                       <Link to={`/item/${searchItem.id}`}>
-                        <figure
-                          className={`${itemFigureClass(
-                            searchItem,
-                          )} [item-figure] image is-48x48 m-0`}
-                        >
-                          <img src={searchItem.iconUrl} alt={searchItem.name} />
-                        </figure>
-                      </Link>
-                    </td>
-                    <td>
-                      <Link to={`/item/${searchItem.id}`}>
-                        <div
-                          className={`${itemNameClass(searchItem)} has-text-weight-semi/bold`}
-                        >
-                          {searchItem.name}
+                        <div className="w-12 h-12 m-0">
+                          <img 
+                            src={searchItem.iconUrl} 
+                            alt={searchItem.name} 
+                            className="w-full h-full object-contain"
+                          />
                         </div>
                       </Link>
-                      <br />
-                      <small>
-                        {t(`enums:itemType.${searchItem.type}`)}{' '}
-                        {t(`enums:itemSlot.${searchItem.slot}`)}
-                      </small>
                     </td>
                     <td>
-                      <small>{searchItem.description}</small>
+                      <Link 
+                        to={`/item/${searchItem.id}`}
+                        className="font-semibold hover:text-primary transition-colors"
+                      >
+                        {searchItem.name}
+                      </Link>
+                      <div className="text-sm text-base-content/60 mt-1">
+                        {t(`enums:itemType.${searchItem.type}`)}{' '}
+                        {t(`enums:itemSlot.${searchItem.slot}`)}
+                      </div>
                     </td>
-                    <td align="right">
-                      <span className="tag is-primary">
+                    <td className="text-sm text-base-content/60">
+                      {searchItem.description}
+                    </td>
+                    <td className="text-right">
+                      <span className="badge badge-primary">
                         {searchItem.__typename}
                       </span>
                     </td>
@@ -268,38 +260,41 @@ export function Search(): ReactElement {
 
               if (searchItem.__typename === 'Quest') {
                 return (
-                  <tr>
+                  <tr key={searchItem.id} className="hover:bg-base-200">
                     <td>
                       <Link to={`/quest/${searchItem.id}`}>
-                        <div className="icon-text">
-                          <span className="icon has-text-info">
+                        <div className="flex items-center gap-2">
+                          <span className="text-info">
                             <img
                               src={`/images/icons/${questTypeIcon(
                                 searchItem.questType,
                                 searchItem.repeatableType,
                               )}`}
                               alt="Quest Type"
+                              className="w-6 h-6"
                             />
                           </span>
                         </div>
                       </Link>
                     </td>
                     <td>
-                      <Link to={`/quest/${searchItem.id}`}>
+                      <Link 
+                        to={`/quest/${searchItem.id}`}
+                        className="font-medium hover:text-primary transition-colors"
+                      >
                         {searchItem.name}
                       </Link>
-                      <br />
                       {searchItem.minLevel > 0 && (
-                        <small>Lvl: {searchItem.minLevel}</small>
+                        <div className="text-sm text-base-content/60 mt-1">
+                          Lvl: {searchItem.minLevel}
+                        </div>
                       )}
                     </td>
-                    <td>
-                      <small>
-                        {searchItem.journalEntry ?? searchItem.questDescription}
-                      </small>
+                    <td className="text-sm text-base-content/60">
+                      {searchItem.journalEntry ?? searchItem.questDescription}
                     </td>
-                    <td align="right">
-                      <span className="tag is-primary">
+                    <td className="text-right">
+                      <span className="badge badge-primary">
                         {searchItem.__typename}
                       </span>
                     </td>
@@ -309,66 +304,33 @@ export function Search(): ReactElement {
 
               if (searchItem.__typename === 'Creature') {
                 return (
-                  <tr>
+                  <tr key={searchItem.id} className="hover:bg-base-200">
                     <td>
                       <Link to={`/creature/${searchItem.id}`}>
-                        <div className="icon-text">
-                          <span className="icon has-text-info">
-                            <figure className={`image m-0`}>
-                              <img
-                                src="/images/corner_icons/ea_icon_corner_social.png"
-                                width={48}
-                                height={48}
-                                alt={searchItem.name}
-                              />
-                            </figure>
+                        <div className="flex items-center gap-2">
+                          <span className="text-info">
+                            <img
+                              src="/images/icons/creature.png"
+                              alt="Creature"
+                              className="w-6 h-6"
+                            />
                           </span>
                         </div>
                       </Link>
                     </td>
                     <td>
-                      <Link to={`/creature/${searchItem.id}`}>
+                      <Link 
+                        to={`/creature/${searchItem.id}`}
+                        className="font-medium hover:text-primary transition-colors"
+                      >
                         {searchItem.name}
                       </Link>
                     </td>
-                    <td>
+                    <td className="text-sm text-base-content/60">
                       {t(`enums:creatureSubType.${searchItem.creatureSubType}`)}
                     </td>
-                    <td align="right">
-                      <span className="tag is-primary">
-                        {searchItem.__typename}
-                      </span>
-                    </td>
-                  </tr>
-                );
-              }
-              if (searchItem.__typename === 'Chapter') {
-                return (
-                  <tr>
-                    <td>
-                      <Link to={`/chapter/${searchItem.id}`}>
-                        <div className="icon-text">
-                          <span className="icon has-text-info">
-                            <figure className={`image m-0`}>
-                              <img
-                                src="/images/corner_icons/ea_icon_corner_help.png"
-                                width={48}
-                                height={48}
-                                alt={searchItem.name ?? undefined}
-                              />
-                            </figure>
-                          </span>
-                        </div>
-                      </Link>
-                    </td>
-                    <td>
-                      <Link to={`/chapter/${searchItem.id}`}>
-                        {searchItem.name}
-                      </Link>
-                    </td>
-                    <td></td>
-                    <td align="right">
-                      <span className="tag is-primary">
+                    <td className="text-right">
+                      <span className="badge badge-primary">
                         {searchItem.__typename}
                       </span>
                     </td>
@@ -376,41 +338,43 @@ export function Search(): ReactElement {
                 );
               }
 
-              /*
-              if (searchItem.__typename === 'GameObject') {
+              if (searchItem.__typename === 'Chapter') {
                 return (
-                  <tr>
+                  <tr key={searchItem.id} className="hover:bg-base-200">
                     <td>
-                      <Link to={`/gameobject/${searchItem.id}`}>
-                        <div className="icon-text">
-                          <span className="icon has-text-info">
-                            <figure className={`image m-0`}>
-                              <img
-                                src="/images/corner_icons/ea_icon_corner_bag.png"
-                                width={48}
-                                height={48}
-                                alt={searchItem.name}
-                              />
-                            </figure>
+                      <Link to={`/chapter/${searchItem.id}`}>
+                        <div className="flex items-center gap-2">
+                          <span className="text-info">
+                            <img
+                              src="/images/corner_icons/ea_icon_corner_help.png"
+                              width={48}
+                              height={48}
+                              alt={searchItem.name ?? undefined}
+                              className="w-12 h-12 object-contain"
+                            />
                           </span>
                         </div>
                       </Link>
                     </td>
                     <td>
-                      <Link to={`/gameobject/${searchItem.id}`}>
+                      <Link 
+                        to={`/chapter/${searchItem.id}`}
+                        className="font-medium hover:text-primary transition-colors"
+                      >
                         {searchItem.name}
                       </Link>
                     </td>
                     <td></td>
-                    <td align="right">
-                      <span className="tag is-primary">
+                    <td className="text-right">
+                      <span className="badge badge-primary">
                         {searchItem.__typename}
                       </span>
                     </td>
                   </tr>
                 );
               }
-              */
+
+              return null;
             })}
           </tbody>
         </table>

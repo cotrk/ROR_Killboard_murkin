@@ -31,14 +31,7 @@ const SKIRMISH_TOP_PLAYER = gql`
           guild {
             id
             name
-            realm
-            heraldry {
-              emblem
-              pattern
-              color1
-              color2
-              shape
-            }
+            heraldry
           }
         }
       }
@@ -46,105 +39,105 @@ const SKIRMISH_TOP_PLAYER = gql`
   }
 `;
 
-export function SkirmishTopPlayer({
-  id,
-  attribute,
-  title,
-  className,
-}: {
-  id: string;
-  attribute: keyof SkirmishScoreboardEntry;
-  title: string;
-  className: string;
-}): ReactElement {
-  const { t } = useTranslation(['pages']);
+export function SkirmishTopPlayer({ id }: { id: string }): ReactElement {
+  const { t } = useTranslation(['common', 'skirmish']);
+
   const { loading, error, data } = useQuery<Query>(SKIRMISH_TOP_PLAYER, {
-    variables: { id, order: [{ [attribute]: 'DESC' }] },
+    variables: { 
+      id,
+      order: [{ field: 'damage', direction: 'DESC' }]
+    },
   });
 
-  if (loading)
-    return (
-      <div className="card">
-        <div className={clsx('card-content', className)}>
-          <progress className="progress" />
-        </div>
-      </div>
-    );
+  const topPlayer = data?.skirmish?.scoreboardEntries?.nodes?.[0];
 
-  if (
-    error ||
-    data?.skirmish?.scoreboardEntries?.nodes == null ||
-    data?.skirmish.scoreboardEntries.nodes.length === 0 ||
-    data?.skirmish.scoreboardEntries.nodes[0][attribute] === 0
-  )
-    return (
-      <div className={clsx('card-content', className)}>
-        <header className="card-header">
-          <p className="card-header-title">{t(title)}</p>
-          <p className="card-header-title is-justify-content-right has-text-grey">
-            -
-          </p>
-        </header>
-        <div className="card-content">
-          <article className="media">
-            <figure className="media-left">
-              <div />
-              <small>
-                Lvl -
-                <br />
-                RR -
-              </small>
-            </figure>
-          </article>
-        </div>
-      </div>
-    );
-
-  const player = data.skirmish.scoreboardEntries.nodes[0];
+  if (loading) return <div className="skeleton h-64"></div>;
+  if (error) return <div className="alert alert-error">Error loading top player: {error.message}</div>;
+  if (!topPlayer) {
+    return <div className="alert alert-info">No player data available</div>;
+  }
 
   return (
-    <div className={clsx('card-content', 'mb-1', className)}>
-      <header className="card-header">
-        <p className="card-header-title">{t(title)}</p>
-        <p className="card-header-title is-justify-content-right has-text-grey">
-          {Number(player[attribute]).toLocaleString()}
-        </p>
-      </header>
-      <div className="card-content p-1">
-        <div>
-          <span className="icon-text">
-            <span className="icon">
-              <img
-                src={careerIcon(player.character.career)}
-                alt={t(`enums:career.${player.character.career}`) ?? ''}
-              />
-            </span>
-            <div>
-              <div>
-                <Link to={`/character/${player.character.id}`}>
-                  {player.character.name}
-                </Link>
+    <div className="card bg-base-100 shadow-xl">
+      <div className="card-body">
+        <h2 className="card-title">Top Player</h2>
+        
+        <div className="flex items-center gap-4 p-4">
+          <div className="avatar">
+            <div className="w-16 h-16 rounded-full">
+              <div className={`
+                w-full h-full rounded-full flex items-center justify-center text-2xl
+                ${topPlayer.realm?.toLowerCase() === 'destruction' ? 'bg-error' : 'bg-info'}
+              `}>
+                {careerIcon(topPlayer.character.career)}
               </div>
-              <small>
-                Lvl <strong>{player.level}</strong> / RR{' '}
-                <strong>{player.renownRank}</strong>
-              </small>
             </div>
-          </span>
+          </div>
+          
+          <div className="flex-1">
+            <div className="flex items-center gap-2 mb-2">
+              <h3 className="text-xl font-bold">
+                <Link 
+                  to={`/character/${topPlayer.character.id}`} 
+                  className="link-hover link-primary"
+                >
+                  {topPlayer.character.name}
+                </Link>
+              </h3>
+              {topPlayer.guild && (
+                <div className="flex items-center gap-1">
+                  <GuildHeraldry
+                    size="24"
+                    heraldry={topPlayer.guild.heraldry}
+                    realm={topPlayer.guild.realm}
+                  />
+                  <Link 
+                    to={`/guild/${topPlayer.guild.id}`} 
+                    className="link-hover link-info text-sm"
+                  >
+                    {topPlayer.guild.name}
+                  </Link>
+                </div>
+              )}
+            </div>
+            
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+              <div className="stat">
+                <div className="stat-title">Level</div>
+                <div className="stat-value">{topPlayer.level}</div>
+              </div>
+              <div className="stat">
+                <div className="stat-title">Renown</div>
+                <div className="stat-value">{topPlayer.renownRank}</div>
+              </div>
+              <div className="stat">
+                <div className="stat-title">Damage</div>
+                <div className="stat-value">{topPlayer.damage.toLocaleString()}</div>
+              </div>
+              <div className="stat">
+                <div className="stat-title">Healing</div>
+                <div className="stat-value">{topPlayer.healing.toLocaleString()}</div>
+              </div>
+              <div className="stat">
+                <div className="stat-title">Protection</div>
+                <div className="stat-value">{topPlayer.protection.toLocaleString()}</div>
+              </div>
+              <div className="stat">
+                <div className="stat-title">Death Blows</div>
+                <div className="stat-value">{topPlayer.deathBlows.toLocaleString()}</div>
+              </div>
+              <div className="stat">
+                <div className="stat-title">Realm</div>
+                <div className={`
+                  stat-value capitalize
+                  ${topPlayer.realm?.toLowerCase() === 'destruction' ? 'text-error' : 'text-info'}
+                `}>
+                  {topPlayer.realm}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-
-        {player.guild && (
-          <span className="icon-text">
-            <span className="icon">
-              <GuildHeraldry
-                size="24"
-                heraldry={player.guild.heraldry}
-                realm={player.guild.realm}
-              />
-            </span>
-            <Link to={`/guild/${player.guild?.id}`}>{player.guild?.name}</Link>
-          </span>
-        )}
       </div>
     </div>
   );

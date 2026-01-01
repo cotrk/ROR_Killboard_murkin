@@ -1,19 +1,14 @@
 import { gql, useQuery } from '@apollo/client';
-import { getUnixTime, startOfWeek } from 'date-fns';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
-import { Query } from '@/__generated__/graphql';
-import { careerIcon } from '@/utils';
-import { ErrorMessage } from '@/components/global/ErrorMessage';
 import { ReactElement } from 'react';
+import { Query } from '@/__generated__/graphql';
 
 const CHARACTER_INFO = gql`
   query GetCharacterInfo($id: ID!) {
     character(id: $id) {
       name
       career
-      level
-      renownRank
       guildMembership {
         guild {
           id
@@ -27,70 +22,93 @@ const CHARACTER_INFO = gql`
 export function CharacterInfo({ id }: { id: number }): ReactElement {
   const { t } = useTranslation(['common', 'components', 'enums']);
   const { loading, error, data } = useQuery<Query>(CHARACTER_INFO, {
-    variables: {
-      id,
-      startOfWeek: getUnixTime(startOfWeek(new Date(), { weekStartsOn: 1 })),
-    },
+    variables: { id },
   });
 
-  if (loading) return <progress className="progress" />;
-  if (error) return <ErrorMessage name={error.name} message={error.message} />;
+  if (loading) return <div className="skeleton h-64"></div>;
+  if (error) return <div className="alert alert-error">Error loading character: {error.message}</div>;
 
-  if (data?.character == null)
-    return <ErrorMessage customText={t('common:notFound')} />;
+  if (!data?.character) return <div className="alert alert-info">Character not found</div>;
+
+  const character = data.character;
 
   return (
-    <div className="card mb-5">
-      <div className="card-content">
-        <article className="media">
-          <figure className="media-left">
-            <figure className="image is-128x128">
-              <img
-                src="/images/corner_icons/ea_icon_corner_character.png"
-                alt="Character"
-              />
-            </figure>
-          </figure>
-          <div className="media-content">
-            <a
-              className="is-size-4"
-              target="_blank"
-              rel="noopener noreferrer"
-              href={`https://www.returnofreckoning.com/armory/character/${id}`}
-            >
-              <strong>{data.character.name}</strong>
-            </a>
-            <p>
-              <span className="icon-text">
-                <strong>{`${t('components:characterInfo.career')} `}</strong>
-                <span className="icon">
-                  <img
-                    src={careerIcon(data.character.career)}
-                    alt={t(`enums:career.${data.character.career}`) ?? ''}
-                  />
-                </span>
-                <span>{t(`enums:career.${data.character.career}`)}</span>
-              </span>
-            </p>
-            <p>
-              <strong>{`${t('components:characterInfo.level')} `}</strong>
-              {data.character.level}
-            </p>
-            <p>
-              <strong>{`${t('components:characterInfo.renownRank')} `}</strong>
-              {data.character.renownRank}
-            </p>
+    <div className="container mx-auto max-w-7xl mt-2">
+      <div className="flex justify-between items-center mb-4">
+        <nav className="breadcrumbs text-sm">
+          <ul>
+            <li>
+              <Link to="/" className="link-hover link-primary">{t('common:home')}</Link>
+            </li>
+            <li>
+              <Link to={`/character/${id}`} className="link-hover link-primary">{t('common:character')}</Link>
+            </li>
+            <li className="text-base-content/60">
+              {character.name}
+            </li>
+          </ul>
+        </nav>
+      </div>
 
-            {data.character.guildMembership?.guild != null && (
-              <p>
-                <strong>{`${t('components:characterInfo.guild')} `}</strong>
-                <Link to={`/guild/${data.character.guildMembership.guild.id}`}>
-                  {data.character.guildMembership.guild.name}
-                </Link>
-              </p>
-            )}
+      {/* Character Info Card */}
+      <div className="card bg-base-100 shadow-xl mb-6">
+        <div className="card-body">
+          <div className="flex items-start gap-6">
+            {/* Character Icon */}
+            <div className="avatar">
+              <div className="w-24 h-24 rounded-lg bg-primary/20 flex items-center justify-center text-4xl">
+                {character.career?.charAt(0) || '👤'}
+              </div>
+            </div>
+
+            {/* Character Details */}
+            <div className="flex-1 min-w-0">
+              <h2 className="card-title text-2xl mb-4">{character.name}</h2>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="stat">
+                  <div className="stat-title">Career</div>
+                  <div className="stat-value">{character.career}</div>
+                </div>
+                
+                {character.guildMembership?.guild && (
+                  <div className="stat">
+                    <div className="stat-title">Guild</div>
+                    <div className="stat-value">
+                      <Link 
+                        to={`/guild/${character.guildMembership.guild.id}`}
+                        className="link-hover link-primary"
+                      >
+                        {character.guildMembership.guild.name}
+                      </Link>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
-        </article>
+        </div>
+      </div>
+
+      {/* Actions */}
+      <div className="card bg-base-100 shadow-xl">
+        <div className="card-body">
+          <div className="flex gap-4">
+            <Link 
+              to={`/character/${id}/kills`}
+              className="btn btn-outline"
+            >
+              View Kills
+            </Link>
+            
+            <Link 
+              to={`/character/${id}/deaths`}
+              className="btn btn-outline"
+            >
+              View Deaths
+            </Link>
+          </div>
+        </div>
       </div>
     </div>
   );

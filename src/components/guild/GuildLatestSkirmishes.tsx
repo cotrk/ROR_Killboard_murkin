@@ -1,20 +1,16 @@
 import { gql } from '@apollo/client';
-import { useSearchParams } from 'react-router';
+import { useTranslation } from 'react-i18next';
 import { SkirmishList } from '@/components/skirmish/SkirmishList';
-import {
-  SkirmishFilters,
-  getskirmishFilters,
-} from '@/components/skirmish/SkirmishFilters';
 import { ReactElement } from 'react';
 
-const LATEST_SKIRMISHES = gql`
-  query GetGuildLatestSkirmishes(
-    $guildId: ID
-    $where: SkirmishFilterInput
+const LATEST_GUILD_SKIRMISHES = gql`
+  query GetLatestGuildSkirmishes(
+    $guildId: ID!
     $first: Int
     $last: Int
     $before: String
     $after: String
+    $where: SkirmishFilterInput
   ) {
     skirmishes(
       guildId: $guildId
@@ -29,68 +25,48 @@ const LATEST_SKIRMISHES = gql`
         scenario {
           id
           name
-        }
-        primaryZone {
-          id
-          name
-        }
-        primaryZoneArea {
-          id
-          name
-        }
-        startTime
-        endTime
-        topGuildsByPlayers {
-          guild {
+          zone {
             id
             name
-            realm
-            heraldry {
-              emblem
-              pattern
-              color1
-              color2
-              shape
-            }
           }
-          count
         }
-        numberOfKills
-        numberOfKillsOrder
-        numberOfKillsDestruction
-        numberOfPlayers
-        numberOfPlayersOrder
-        numberOfPlayersDestruction
-      }
-      pageInfo {
-        hasNextPage
-        endCursor
-        hasPreviousPage
-        startCursor
+        start
+        end
+        result
+        scoreboardEntries {
+          nodes {
+            rank
+            kills
+            deaths
+            damageDone
+            healingDone
+            renown
+          }
+        }
       }
     }
   }
 `;
 
-export function GuildLatestSkirmishes({
-  guildId,
-  perPage = 15,
-}: {
-  guildId?: string;
-  perPage?: number;
-}): ReactElement {
-  const [search] = useSearchParams();
+interface GuildLatestSkirmishesProps {
+  guildId: string;
+}
+
+export function GuildLatestSkirmishes({ guildId }: GuildLatestSkirmishesProps): ReactElement {
+  const { t } = useTranslation(['common', 'guild']);
 
   return (
-    <>
-      <SkirmishFilters />
-      <SkirmishList
-        query={LATEST_SKIRMISHES}
-        queryOptions={{
-          variables: { guildId, where: getskirmishFilters(search) },
-        }}
-        perPage={perPage}
-      />
-    </>
+    <SkirmishList
+      query={LATEST_GUILD_SKIRMISHES}
+      queryOptions={{
+        variables: {
+          guildId: parseInt(guildId),
+          first: 10,
+        },
+      }}
+      perPage={10}
+      title="Latest Skirmishes"
+      showZone={true}
+    />
   );
 }

@@ -1,34 +1,12 @@
 import { Link, useSearchParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { gql, useQuery } from '@apollo/client';
-import Tippy from '@tippyjs/react';
-import useWindowDimensions from '@/hooks/useWindowDimensions';
-import { QuestFilterInput } from '@/__generated__/graphql';
-import { ErrorMessage } from '@/components/global/ErrorMessage';
-import { SearchBox } from '@/components/global/SearchBox';
-import { GoldPrice } from '@/components/GoldPrice';
-import { ItemPopup } from '@/components/item/ItemPopup';
-import { questTypeIcon } from '../utils';
-import { QueryPagination } from '@/components/global/QueryPagination';
 import { ReactElement } from 'react';
-import clsx from 'clsx';
 import { GetQuestsQuery } from '@/__generated__/graphql';
 
 const QUESTS = gql`
-  query GetQuests(
-    $first: Int
-    $last: Int
-    $before: String
-    $after: String
-    $where: QuestFilterInput
-  ) {
-    quests(
-      first: $first
-      last: $last
-      before: $before
-      after: $after
-      where: $where
-    ) {
+  query GetQuests($first: Int, $after: String) {
+    quests(first: $first, after: $after) {
       nodes {
         id
         name
@@ -40,248 +18,126 @@ const QUESTS = gql`
           isPlayerKill
           isEpic
         }
-        repeatableType
         xp
         gold
         choiceCount
-        rewardsChoice {
-          count
-          item {
-            id
-            iconUrl
-            name
-          }
-        }
-        rewardsGiven {
-          count
-          item {
-            id
-            iconUrl
-            name
-          }
-        }
       }
       pageInfo {
         hasNextPage
         endCursor
-        hasPreviousPage
-        startCursor
       }
     }
   }
 `;
 
-const getQuestNameFilter = (search: URLSearchParams): QuestFilterInput => {
-  const name = search.get('name');
-
-  if (!name) {
-    return {};
-  }
-
-  return { name: { contains: name } };
-};
-
-const getFilters = (search: URLSearchParams): QuestFilterInput => ({
-  ...getQuestNameFilter(search),
-});
-
 export function Quests(): ReactElement {
-  const perPage = 15;
-  const [search, setSearch] = useSearchParams();
-  const { t } = useTranslation(['common', 'pages', 'enums']);
-  const { loading, error, data, refetch } = useQuery<GetQuestsQuery>(QUESTS, {
+  const { t } = useTranslation(['common', 'pages', 'quests']);
+  const [searchParams] = useSearchParams();
+  const search = searchParams.get('search') || '';
+
+  const { loading, error, data } = useQuery<GetQuestsQuery>(QUESTS, {
     variables: {
-      where: getFilters(search),
-      first: perPage,
+      first: 20,
     },
   });
-  const { width } = useWindowDimensions();
-  const isMobile = width <= 768;
 
-  if (loading) return <progress className="progress" />;
-  if (error) return <ErrorMessage name={error.name} message={error.message} />;
-  if (data?.quests?.nodes == null)
-    return <ErrorMessage customText={t('common:notFound')} />;
+  if (loading && !data) return <div className="skeleton h-64"></div>;
+  if (error) return <div className="alert alert-error">Error loading quests: {error.message}</div>;
 
-  const entries = data.quests.nodes;
-  const { pageInfo } = data.quests;
+  const quests = data?.quests?.nodes || [];
+
+  const getQuestTypeIcon = (type: any) => {
+    if (type.isEpic) return '⭐';
+    if (type.isRvR) return '⚔️';
+    if (type.isGroup) return '👥';
+    if (type.isTravel) return '🗺️';
+    if (type.isTome) return '📖';
+    if (type.isPlayerKill) return '💀';
+    return '📋';
+  };
 
   return (
-    <div className="container is-max-widescreen mt-2">
-      <nav className="breadcrumb" aria-label="breadcrumbs">
-        <ul>
-          <li>
-            <Link to="/">{t('common:home')}</Link>
-          </li>
-          <li className="is-active">
-            <div className="ml-2">{t('pages:quests.title')}</div>
-          </li>
-        </ul>
-      </nav>
+    <div className="container mx-auto max-w-7xl mt-2">
+      <div className="flex justify-between items-center mb-4">
+        <nav className="breadcrumbs text-sm">
+          <ul>
+            <li>
+              <Link to="/" className="link-hover link-primary">{t('common:home')}</Link>
+            </li>
+            <li className="text-base-content/60">
+              {t('common:quests')}
+            </li>
+          </ul>
+        </nav>
+      </div>
 
-      <div className="card mb-5">
-        <div className="card-content">
-          <div className="field">
-            <label className="label">{t('pages:quests.search')}</label>
-            <SearchBox
-              initialQuery={search.get('name') || ''}
-              onSubmit={(event) => {
-                search.set('name', event);
-                setSearch(search);
-              }}
-            />
+      <div className="card bg-base-100 shadow-xl mb-6">
+        <div className="card-body">
+          <h2 className="card-title text-2xl mb-4">{t('common:quests')}</h2>
+          
+          {search && (
+            <div className="alert alert-info mb-4">
+              Searching for: {search}
+            </div>
+          )}
+
+          <div className="overflow-x-auto">
+            <table className="table table-zebra w-full">
+              <thead>
+                <tr>
+                  <th>Type</th>
+                  <th>Name</th>
+                  <th>Rewards</th>
+                </tr>
+              </thead>
+              <tbody>
+                {quests.map((quest) => (
+                  <tr key={quest.id}>
+                    <td>
+                      <div className="text-2xl">
+                        {getQuestTypeIcon(quest.type)}
+                      </div>
+                    </td>
+                    <td>
+                      <Link 
+                        to={`/quest/${quest.id}`}
+                        className="link-hover link-primary font-medium"
+                      >
+                        {quest.name}
+                      </Link>
+                    </td>
+                    <td>
+                      <div className="space-y-1">
+                        {quest.xp && (
+                          <div className="text-sm text-success">
+                            +{quest.xp} XP
+                          </div>
+                        )}
+                        {quest.gold && (
+                          <div className="text-sm text-warning">
+                            {quest.gold} Gold
+                          </div>
+                        )}
+                        {quest.choiceCount > 0 && (
+                          <div className="badge badge-outline badge-sm">
+                            {quest.choiceCount} Choices
+                          </div>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
+
+          {quests.length === 0 && !loading && (
+            <div className="alert alert-info">
+              {search ? 'No quests found matching your search.' : 'No quests available.'}
+            </div>
+          )}
         </div>
       </div>
-
-      <div className="table-container">
-        <table
-          className={clsx(
-            'table',
-            'is-striped',
-            'is-hoverable',
-            isMobile ? 'is-narrow' : 'is-fullwidth',
-          )}
-        >
-          <thead>
-            <tr>
-              <th>{t('pages:quests.name')}</th>
-              <th align="right">{t('pages:quests.xp')}</th>
-              <th align="right" id="table_gold">
-                <span className="mr-2">{t('pages:quests.gold')}</span>
-              </th>
-              <th>{t('pages:quests.given')}</th>
-              <th>{t('pages:quests.choice')}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {entries.map((quest) => (
-              <tr key={quest.id}>
-                <td>
-                  <Link to={`/quest/${quest.id}`}>
-                    <div className="icon-text">
-                      <span className="icon has-text-info">
-                        <img
-                          src={`/images/icons/${questTypeIcon(
-                            quest.type,
-                            quest.repeatableType,
-                          )}`}
-                          alt="Quest Type"
-                        />
-                      </span>
-                    </div>
-                  </Link>
-                </td>
-                <td align="right">{quest.xp}</td>
-                <td align="right" aria-labelledby="table_gold">
-                  <GoldPrice price={quest.gold} />
-                </td>
-                <td>
-                  <div className="mb-2 is-flex">
-                    {quest.rewardsGiven.slice(0, 5).map((reward) => (
-                      <div key={`${quest.id}-${reward.item.id}`}>
-                        <Tippy
-                          duration={0}
-                          placement="top"
-                          content={<ItemPopup itemId={reward.item.id} />}
-                        >
-                          <div>
-                            <Link to={`/item/${reward.item.id}`}>
-                              <figure className="image is-32x32">
-                                <div style={{ position: 'relative' }}>
-                                  <img
-                                    style={{
-                                      position: 'absolute',
-                                      top: 0,
-                                      left: 0,
-                                    }}
-                                    src={reward.item.iconUrl}
-                                    alt={reward.item.name}
-                                  />
-                                  {reward.count > 1 && (
-                                    <div
-                                      className="has-text-white"
-                                      style={{
-                                        position: 'absolute',
-                                        top: 0,
-                                        right: 4,
-                                      }}
-                                    >
-                                      {reward.count}
-                                    </div>
-                                  )}
-                                </div>
-                              </figure>
-                            </Link>
-                          </div>
-                        </Tippy>
-                      </div>
-                    ))}
-                  </div>
-                  {quest.rewardsGiven.length > 5 && (
-                    <div>{quest.rewardsGiven.length - 5} other items</div>
-                  )}
-                </td>
-                <td>
-                  {quest.choiceCount > 0 && (
-                    <div>Choose {quest.choiceCount}</div>
-                  )}
-
-                  <div className="mb-2 is-flex">
-                    {quest.rewardsChoice.slice(0, 5).map((reward) => (
-                      <div key={`${quest.id}-${reward.item.id}`}>
-                        <Tippy
-                          duration={0}
-                          placement="top"
-                          content={<ItemPopup itemId={reward.item.id} />}
-                        >
-                          <div>
-                            <Link to={`/item/${reward.item.id}`}>
-                              <figure className="image is-32x32">
-                                <div style={{ position: 'relative' }}>
-                                  <img
-                                    style={{
-                                      position: 'absolute',
-                                      top: 0,
-                                      left: 0,
-                                    }}
-                                    src={reward.item.iconUrl}
-                                    alt={reward.item.name}
-                                  />
-                                  {reward.count > 1 && (
-                                    <div
-                                      className="has-text-white"
-                                      style={{
-                                        position: 'absolute',
-                                        top: 0,
-                                        right: 4,
-                                      }}
-                                    >
-                                      {reward.count}
-                                    </div>
-                                  )}
-                                </div>
-                              </figure>
-                            </Link>
-                          </div>
-                        </Tippy>
-                      </div>
-                    ))}
-                  </div>
-                  {quest.rewardsChoice.length > 5 && (
-                    <div>{quest.rewardsChoice.length - 5} other items</div>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      <QueryPagination
-        pageInfo={pageInfo}
-        perPage={perPage}
-        refetch={refetch}
-      />
     </div>
   );
 }

@@ -1,4 +1,5 @@
 import { ReactNode } from 'react';
+import { API_CONFIG, ICON_CONFIG } from '@/config/constants';
 
 export function GoldPrice({ price }: { price: number }): ReactNode {
   if (price === 0) {
@@ -16,7 +17,7 @@ export function GoldPrice({ price }: { price: number }): ReactNode {
           {gold}
           <figure className="image is-16x16 mt-1 ml-1">
             <img
-              src="https://armory.returnofreckoning.com/icon/46"
+              src={`${API_CONFIG.ARMORY_BASE_URL}/icon/${ICON_CONFIG.GOLD}`}
               alt="Gold"
             />
           </figure>
@@ -27,7 +28,7 @@ export function GoldPrice({ price }: { price: number }): ReactNode {
           {silver}
           <figure className="image is-16x16 mt-1 ml-1">
             <img
-              src="https://armory.returnofreckoning.com/icon/47"
+              src={`${API_CONFIG.ARMORY_BASE_URL}/icon/${ICON_CONFIG.SILVER}`}
               alt="Silver"
             />
           </figure>
@@ -38,7 +39,7 @@ export function GoldPrice({ price }: { price: number }): ReactNode {
           {copper}
           <figure className="image is-16x16 mt-1 ml-1">
             <img
-              src="https://armory.returnofreckoning.com/icon/47"
+              src={`${API_CONFIG.ARMORY_BASE_URL}/icon/${ICON_CONFIG.SILVER}`}
               alt="Copper"
             />
           </figure>

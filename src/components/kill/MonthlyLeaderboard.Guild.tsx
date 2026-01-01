@@ -1,54 +1,62 @@
 import { gql, useQuery } from '@apollo/client';
 import { useTranslation } from 'react-i18next';
-import { Query } from '@/__generated__/graphql';
 import { LeaderboardGuildTable } from '@/components/kill/LeaderboardGuildTable';
-import { ErrorMessage } from '@/components/global/ErrorMessage';
 import { ReactElement } from 'react';
 
 const MONTHLY_GUILD_LEADERBOARD = gql`
-  query GetMonthlyGuildLeaderboard($year: Int!, $month: Int!) {
+  query GetMonthlyGuildLeaderboard(
+    $year: Int!
+    $month: Int!
+  ) {
     monthlyGuildKillLeaderboard(year: $year, month: $month) {
+      rank
+      kills
       guild {
         id
         name
-        realm
-        heraldry {
-          emblem
-          pattern
-          color1
-          color2
-          shape
-        }
+        heraldry
       }
-      rank
-      kills
     }
   }
 `;
 
-export function MonthlyGuildLeaderboard(): ReactElement {
-  const { t } = useTranslation(['common', 'components']);
+interface MonthlyLeaderboardGuildProps {
+  guildId?: string;
+}
 
-  const month = new Date().getUTCMonth() + 1;
-  const year = new Date().getUTCFullYear();
+export function MonthlyLeaderboardGuild({ guildId }: MonthlyLeaderboardGuildProps): ReactElement {
+  const { t } = useTranslation(['common', 'leaderboard']);
 
-  const { loading, error, data } = useQuery<Query>(MONTHLY_GUILD_LEADERBOARD, {
-    variables: { year, month },
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth() + 1;
+
+  const { loading, error, data } = useQuery(MONTHLY_GUILD_LEADERBOARD, {
+    variables: {
+      year,
+      month,
+    },
+    skip: !guildId, // Only run query if guildId is provided
   });
 
-  if (loading) return <progress className="progress" />;
-  if (error) return <ErrorMessage name={error.name} message={error.message} />;
-  if (data?.monthlyGuildKillLeaderboard == null)
-    return <p>{t('common:error')}</p>;
+  if (loading) return <div className="skeleton h-64"></div>;
+  if (error) return <div className="alert alert-error">Error loading guild leaderboard: {error.message}</div>;
+  if (!data?.monthlyGuildKillLeaderboard) return <div className="alert alert-info">No leaderboard data available</div>;
 
   return (
-    <div>
-      <div className="is-size-4 is-family-secondary is-uppercase">
-        {t('components:leaderboardGuild.monthlyTitle')}
+    <div className="card bg-base-100 shadow-xl">
+      <div className="card-body">
+        <h2 className="card-title">
+          {t('leaderboard:monthlyGuildLeaderboard')} - {month}/{year}
+        </h2>
+        
+        <LeaderboardGuildTable 
+          data={data.monthlyGuildKillLeaderboard}
+        />
       </div>
-      <LeaderboardGuildTable
-        data={data.monthlyGuildKillLeaderboard.slice(0, 10)}
-      />
     </div>
   );
 }
+
+// Export alias for backward compatibility
+export { MonthlyLeaderboardGuild as MonthlyGuildLeaderboard };

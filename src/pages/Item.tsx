@@ -1,10 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import { Link, useParams } from 'react-router';
 import { gql, useQuery } from '@apollo/client';
-import clsx from 'clsx';
-import { itemNameClass, statMultiplier } from '../itemUtils';
-import { ErrorMessage } from '@/components/global/ErrorMessage';
-import { isPercentage } from '../utils';
 import { ItemQuests } from '@/components/item/ItemQuests';
 import { ItemVendorsPurchase } from '@/components/item/ItemVendorsPurchase';
 import { ItemVendorsSell } from '@/components/item/ItemVendorsSell';
@@ -18,7 +14,6 @@ const ITEM_INFO = gql`
       name
       description
       careerRestriction
-      description
       rarity
       itemLevel
       iconUrl
@@ -31,7 +26,6 @@ const ITEM_INFO = gql`
       renownRankRequirement
       slot
       armor
-      careerRestriction
       talismanSlots
       speed
       dps
@@ -43,283 +37,261 @@ const ITEM_INFO = gql`
           name
           iconUrl
         }
-        bonuses {
-          itemsRequired
-          bonus {
-            ... on Ability {
-              description
-              __typename
-            }
-            ... on ItemStat {
-              stat
-              value
-              percentage
-              __typename
-            }
-          }
-        }
-      }
-      buffs {
-        id
-        description
-      }
-      soldByVendors {
-        totalCount
-      }
-      usedToPurchase {
-        totalCount
-      }
-      rewardedFromQuests {
-        totalCount
       }
     }
   }
 `;
 
 export function Item({
-  tab,
+  tab = 'vendors'
 }: {
-  tab: 'vendors' | 'quests' | 'purchase';
+  tab: 'vendors' | 'purchase' | 'quests';
 }): ReactElement {
-  const { t } = useTranslation(['common', 'pages']);
+  const { t } = useTranslation(['common', 'pages', 'items']);
   const { id } = useParams();
+
   const { loading, error, data } = useQuery<GetItemInfoQuery>(ITEM_INFO, {
-    variables: {
-      id,
-    },
+    variables: { id },
   });
 
-  if (loading) return <progress className="progress" />;
-  if (error) return <ErrorMessage name={error.name} message={error.message} />;
+  if (loading) return <div className="skeleton h-64"></div>;
+  if (error) return <div className="alert alert-error">Error loading item: {error.message}</div>;
+  if (!data?.item) return <div className="alert alert-info">Item not found</div>;
 
-  if (data?.item == null)
-    return <ErrorMessage customText={t('common:notFound')} />;
+  const item = data.item;
 
-  const { item } = data;
-
-  const activeTabs: string[] = [];
-
-  if (item.soldByVendors?.totalCount) {
-    activeTabs.push('vendors');
-  }
-  if (item.usedToPurchase?.totalCount) {
-    activeTabs.push('purchase');
-  }
-  if (item.rewardedFromQuests?.totalCount) {
-    activeTabs.push('quests');
-  }
-  const activeTab = activeTabs.includes(tab) ? tab : activeTabs[0];
+  const getRarityColor = (rarity: string) => {
+    switch (rarity?.toLowerCase()) {
+      case 'common': return 'text-base-content';
+      case 'uncommon': return 'text-success';
+      case 'rare': return 'text-info';
+      case 'epic': return 'text-warning';
+      case 'legendary': return 'text-error';
+      default: return 'text-base-content';
+    }
+  };
 
   return (
-    <div className="container is-widescreen mt-2">
-      <nav className="breadcrumb" aria-label="breadcrumbs">
-        <ul>
-          <li>
-            <Link to="/">{t('common:home')}</Link>
-          </li>
-          <li>
-            <Link to="/items">{t('common:items')}</Link>
-          </li>
-          <li className="is-active">
-            <div className="ml-2">
-              {t('pages:itemPage.itemId', { itemId: id })}
-            </div>
-          </li>
-        </ul>
-      </nav>
+    <div className="container mx-auto max-w-7xl mt-2">
+      <div className="flex justify-between items-center mb-4">
+        <nav className="breadcrumbs text-sm">
+          <ul>
+            <li>
+              <Link to="/" className="link-hover link-primary">{t('common:home')}</Link>
+            </li>
+            <li>
+              <Link to="/items" className="link-hover link-primary">{t('common:items')}</Link>
+            </li>
+            <li className="text-base-content/60">
+              {item.name}
+            </li>
+          </ul>
+        </nav>
+      </div>
 
-      <div className="card mb-5">
-        <div className="card-content">
-          <article className="media">
-            <figure className="media-left">
-              <figure className="image is-64x64 m-0">
-                <img src={item.iconUrl} alt="Item Icon" />
-              </figure>
-            </figure>
-            <div className="media-content">
-              <div className="columns">
-                <div className="column">
-                  <div className="is-flex mb-4">
-                    <div className="is-size-3  is-family-secondary">
-                      <div className={itemNameClass(item)}>{item.name}</div>
-                    </div>
-                  </div>
-                  <div className="mb-1">{item.description}</div>
-                  {item.slot !== 'NONE' && (
-                    <div>{t(`enums:itemSlot.${item.slot}`)}</div>
-                  )}
-                  {item.type !== 'NONE' && (
-                    <div>{t(`enums:itemType.${item.type}`)}</div>
-                  )}
-                  {item.itemLevel > 0 && <div>Item Level {item.itemLevel}</div>}
-                  {item.armor > 0 && item.type !== 'SHIELD' && (
-                    <div className="stats-text-highlight">
-                      {item.armor} Armor
-                    </div>
-                  )}
-                  {item.dps > 0 && item.type !== 'SHIELD' && (
-                    <div className="stats-text-highlight">
-                      {(item.dps / 10).toFixed(1)} DPS
-                    </div>
-                  )}
-                  {item.speed > 0 && (
-                    <div className="stats-text-highlight">
-                      {(item.speed / 100).toFixed(1)} Speed
-                    </div>
-                  )}
-                  {item.type === 'SHIELD' && (
-                    <div className=" stats-text-highlight">
-                      {item.armor} Block Rating
-                    </div>
-                  )}
-                  <div className="stats-text-highlight">
-                    {item.stats.map((stat) => (
-                      <div key={stat.stat}>
-                        + {stat.value * statMultiplier(stat.stat)}
-                        {isPercentage(stat.stat)} {t(`enums:stat.${stat.stat}`)}
-                      </div>
-                    ))}
-                  </div>
-                  {Array(item.talismanSlots)
-                    .fill(0)
-                    .map(() => (
-                      <div>
-                        <span className="icon-text">
-                          <figure className="image is-24x24 mr-1">
-                            <img
-                              src="https://armory.returnofreckoning.com/icon/1"
-                              alt={t('components:itemVendors.order')}
-                            />
-                          </figure>
-                          Empty Talisman Slot
-                        </span>
-                      </div>
-                    ))}
-
-                  {item.itemSet && (
-                    <div className="mb-3 item-text-set-bonus-enabled">
-                      {item.itemSet.name}
-                      {item.itemSet.bonuses.map((bonus) => (
-                        <div
-                          className={clsx(
-                            'ml-2',
-                            'item-text-set-bonus-disabled',
-                          )}
-                        >
-                          ({bonus.itemsRequired} piece bonus):{' '}
-                          {bonus.bonus.__typename === 'Ability' &&
-                            bonus.bonus.description}
-                          {bonus.bonus.__typename === 'ItemStat' &&
-                            `+ ${
-                              bonus.bonus.value *
-                              statMultiplier(bonus.bonus.stat)
-                            } ${isPercentage(bonus.bonus.stat)} ${t(
-                              `enums:stat.${bonus.bonus.stat}`,
-                            )}`}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                  {item.buffs.length > 0 &&
-                    item.buffs.map((buff) => (
-                      <div key={buff.id} className="item-text-buff">
-                        + {buff.description}
-                      </div>
-                    ))}
-                  {item.levelRequirement > 0 && (
-                    <div className="has-text-white">
-                      Minumum Rank: {item.levelRequirement}
-                    </div>
-                  )}
-                  {item.renownRankRequirement > 0 && (
-                    <div className="has-text-white">
-                      Requires {item.renownRankRequirement} Renown
-                    </div>
-                  )}
-                  {item.careerRestriction.length > 0 && (
-                    <div className="has-text-white">
-                      Career:{' '}
-                      {item.careerRestriction.map((career, i) => {
-                        const seperator = i === 0 ? '' : ', ';
-                        return (
-                          <span key={career}>
-                            {seperator}
-                            {t(`enums:career.${career}`)}
-                          </span>
-                        );
-                      })}
-                    </div>
+      {/* Item Info Card */}
+      <div className="card bg-base-100 shadow-xl mb-6">
+        <div className="card-body">
+          <div className="flex gap-6">
+            {/* Item Icon */}
+            <div className="flex-shrink-0">
+              <div className="avatar">
+                <div className="w-24 h-24 rounded-lg bg-base-200 flex items-center justify-center">
+                  {item.iconUrl ? (
+                    <img 
+                      src={item.iconUrl} 
+                      alt={item.name}
+                      className="w-full h-full object-cover rounded-lg"
+                    />
+                  ) : (
+                    <div className="text-4xl">📦</div>
                   )}
                 </div>
-                {item.itemSet && (
-                  <div className="column">
-                    <div className="is-size-5 is-family-secondary">
-                      {item.itemSet.name}
-                    </div>
-                    {item.itemSet.items.map((itemSetItem) => (
-                      <div className="mb-1">
-                        <span key={itemSetItem.id} className="icon-text">
-                          {itemSetItem.id === item.id && (
-                            <>
-                              <figure className="image is-24x24 m-0 mr-1">
-                                <img
-                                  src={itemSetItem.iconUrl}
-                                  alt="Item Icon"
-                                />
-                              </figure>
-                              {itemSetItem.name}
-                            </>
-                          )}
-                          {itemSetItem.id !== item.id && (
-                            <>
-                              <figure className="image is-24x24 m-0 mr-1">
-                                <img
-                                  src={itemSetItem.iconUrl}
-                                  alt="Item Icon"
-                                />
-                              </figure>
-                              <Link to={`/item/${itemSetItem.id}`}>
-                                {itemSetItem.name}
-                              </Link>
-                            </>
-                          )}
-                        </span>
+              </div>
+            </div>
+
+            {/* Item Details */}
+            <div className="flex-1">
+              <h2 className={`card-title text-2xl mb-2 ${getRarityColor(item.rarity || '')}`}>
+                {item.name}
+              </h2>
+              
+              {item.rarity && (
+                <div className="badge badge-outline mb-2">
+                  {item.rarity}
+                </div>
+              )}
+
+              {item.itemLevel && (
+                <div className="text-sm text-base-content/80 mb-2">
+                  Item Level: {item.itemLevel}
+                </div>
+              )}
+
+              {item.levelRequirement && (
+                <div className="text-sm text-base-content/80 mb-2">
+                  Level Requirement: {item.levelRequirement}
+                </div>
+              )}
+
+              {item.renownRankRequirement && (
+                <div className="text-sm text-base-content/80 mb-2">
+                  Renown Rank: {item.renownRankRequirement}
+                </div>
+              )}
+
+              {item.careerRestriction && (
+                <div className="text-sm text-base-content/80 mb-2">
+                  Career: {item.careerRestriction}
+                </div>
+              )}
+
+              {item.description && (
+                <p className="text-base-content/80 mt-4">{item.description}</p>
+              )}
+            </div>
+          </div>
+
+          {/* Item Stats */}
+          {item.stats && item.stats.length > 0 && (
+            <div className="mt-6">
+              <h3 className="text-lg font-bold mb-4">Stats</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                {item.stats.map((stat, index) => (
+                  <div key={index} className="flex justify-between p-2 bg-base-200 rounded">
+                    <span className="font-medium">{stat.stat}</span>
+                    <span className="text-success font-bold">+{stat.value}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Item Properties */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
+            {item.type && (
+              <div className="stat">
+                <div className="stat-title">Type</div>
+                <div className="stat-value text-sm">{item.type}</div>
+              </div>
+            )}
+            
+            {item.slot && (
+              <div className="stat">
+                <div className="stat-title">Slot</div>
+                <div className="stat-value text-sm">{item.slot}</div>
+              </div>
+            )}
+            
+            {item.armor && (
+              <div className="stat">
+                <div className="stat-title">Armor</div>
+                <div className="stat-value text-sm">{item.armor}</div>
+              </div>
+            )}
+            
+            {item.dps && (
+              <div className="stat">
+                <div className="stat-title">DPS</div>
+                <div className="stat-value text-sm">{item.dps}</div>
+              </div>
+            )}
+            
+            {item.speed && (
+              <div className="stat">
+                <div className="stat-title">Speed</div>
+                <div className="stat-value text-sm">{item.speed}</div>
+              </div>
+            )}
+            
+            {item.talismanSlots && (
+              <div className="stat">
+                <div className="stat-title">Talisman Slots</div>
+                <div className="stat-value text-sm">{item.talismanSlots}</div>
+              </div>
+            )}
+          </div>
+
+          {/* Item Set */}
+          {item.itemSet && (
+            <div className="mt-6">
+              <h3 className="text-lg font-bold mb-4">Item Set: {item.itemSet.name}</h3>
+              <div className="card bg-base-200">
+                <div className="card-body p-4">
+                  <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                    {item.itemSet.items.map((setItem) => (
+                      <div key={setItem.id} className="text-center">
+                        <div className="avatar mb-2">
+                          <div className="w-12 h-12 rounded bg-base-300 flex items-center justify-center">
+                            {setItem.iconUrl ? (
+                              <img 
+                                src={setItem.iconUrl} 
+                                alt={setItem.name}
+                                className="w-full h-full object-cover rounded"
+                              />
+                            ) : (
+                              <div className="text-lg">📦</div>
+                            )}
+                          </div>
+                        </div>
+                        <div className="text-xs">{setItem.name}</div>
                       </div>
                     ))}
                   </div>
-                )}
+                </div>
               </div>
             </div>
-          </article>
+          )}
         </div>
       </div>
-      <div className="tabs">
-        {activeTabs.includes('vendors') && (
-          <li className={activeTab === 'vendors' ? 'is-active' : ''}>
-            <Link to={`/item/${id}`}>
-              {t('pages:itemPage.vendors')} ({item.soldByVendors?.totalCount})
-            </Link>
-          </li>
-        )}
-        {activeTabs.includes('purchase') && (
-          <li className={activeTab === 'purchase' ? 'is-active' : ''}>
-            <Link to={`/item/${id}/purchase`}>
-              {t('pages:itemPage.purchase')} ({item.usedToPurchase?.totalCount})
-            </Link>
-          </li>
-        )}
-        {activeTabs.includes('quests') && (
-          <li className={activeTab === 'quests' ? 'is-active' : ''}>
-            <Link to={`/item/${id}/quests`}>
-              {t('pages:itemPage.quests')} (
-              {item.rewardedFromQuests?.totalCount})
-            </Link>
-          </li>
-        )}
+
+      {/* Navigation Tabs */}
+      <div className="tabs tabs-boxed mb-6">
+        <Link 
+          to={`/item/${id}`}
+          className={`tab tab-lg ${tab === 'vendors' ? 'tab-active' : ''}`}
+        >
+          {t('items:vendors')}
+        </Link>
+        <Link 
+          to={`/item/${id}/purchase`}
+          className={`tab tab-lg ${tab === 'purchase' ? 'tab-active' : ''}`}
+        >
+          {t('items:purchase')}
+        </Link>
+        <Link 
+          to={`/item/${id}/quests`}
+          className={`tab tab-lg ${tab === 'quests' ? 'tab-active' : ''}`}
+        >
+          {t('items:quests')}
+        </Link>
       </div>
-      {activeTab === 'vendors' && <ItemVendorsSell itemId={id} />}
-      {activeTab === 'purchase' && <ItemVendorsPurchase itemId={id} />}
-      {activeTab === 'quests' && <ItemQuests itemId={id} />}
+
+      {/* Tab Content */}
+      <div className="card bg-base-100 shadow-xl">
+        <div className="card-body">
+          {tab === 'vendors' && (
+            <div>
+              <h3 className="text-lg font-bold mb-4">{t('items:vendors')}</h3>
+              <ItemVendorsSell itemId={id || ''} />
+            </div>
+          )}
+
+          {tab === 'purchase' && (
+            <div>
+              <h3 className="text-lg font-bold mb-4">{t('items:purchase')}</h3>
+              <ItemVendorsPurchase itemId={id || ''} />
+            </div>
+          )}
+
+          {tab === 'quests' && (
+            <div>
+              <h3 className="text-lg font-bold mb-4">{t('items:quests')}</h3>
+              <ItemQuests itemId={id || ''} />
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

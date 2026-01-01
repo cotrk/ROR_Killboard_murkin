@@ -2,7 +2,7 @@ import { Link, useParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
 import { gql, useQuery } from '@apollo/client';
 import { GetChapterQuery } from '@/__generated__/graphql';
-import { ErrorMessage } from '@/components/global/ErrorMessage';
+import { LoadingState } from '@/components/shared/LoadingState';
 import { MapPositions } from '@/components/MapPositions';
 import { ReactElement } from 'react';
 import {
@@ -30,121 +30,121 @@ const CHAPTER_DETAILS = gql`
         }
       }
       influenceRewards {
-        count
-        item {
-          ...ItemListEntry
+        items {
+          nodes {
+            id
+            name
+            iconUrl
+            type
+            slot
+          }
         }
-        realm
-        tier
+        experience
+        money
       }
     }
   }
-
-  ${ITEM_FRAGMENT}
 `;
 
 export function Chapter(): ReactElement {
   const { t } = useTranslation(['common', 'pages']);
-  const { id } = useParams();
-  const { loading, error, data } = useQuery<GetChapterQuery>(CHAPTER_DETAILS, {
+  const { id } = useParams<{ id: string }>();
+
+  const { loading, error, data } = useQuery(CHAPTER_DETAILS, {
     variables: { id },
   });
 
-  if (loading) return <progress className="progress" />;
-  if (error) return <ErrorMessage name={error.name} message={error.message} />;
+  if (loading) return <LoadingState message="Loading chapter details..." />;
+  if (error) return <div className="alert alert-error">Error loading chapter: {error.message}</div>;
+  if (!data?.chapter) return <div className="alert alert-info">Chapter not found</div>;
 
-  const entry = data?.chapter;
-  if (entry == null) return <ErrorMessage customText={t('common:notFound')} />;
+  const chapter = data.chapter;
 
   return (
-    <div className="container is-max-widescreen mt-2">
-      <nav className="breadcrumb" aria-label="breadcrumbs">
-        <ul>
-          <li>
-            <Link to="/">{t('common:home')}</Link>
-          </li>
-          <li>
-            <Link to="/chapters">{t('common:chapters')}</Link>
-          </li>
-          <li className="is-active">
-            <Link to={`/chapter/${id}`}>
-              {t('pages:chapter.chapterId', { chapterId: id })}
-            </Link>
-          </li>
-        </ul>
-      </nav>
-
-      <div className="card mb-5">
-        <div className="card-content">
-          <p className="is-size-4 is-family-secondary has-text-info">
-            {entry.name}
-          </p>
-        </div>
+    <div className="container mx-auto max-w-7xl mt-2">
+      <div className="flex justify-between items-center mb-4">
+        <nav className="breadcrumbs text-sm">
+          <ul>
+            <li>
+              <Link to="/" className="link-hover link-primary">{t('common:home')}</Link>
+            </li>
+            <li>
+              <Link to="/chapters" className="link-hover link-primary">{t('pages:chapters.title')}</Link>
+            </li>
+            <li className="text-base-content/60">
+              {chapter.name}
+            </li>
+          </ul>
+        </nav>
       </div>
 
-      {entry.position.mapSetup != null && (
-        <div className="card mb-5">
-          <div className="card-content">
-            <p className="is-size-4 is-family-secondary has-text-info">
-              {entry.position.zone?.name}
-            </p>
-            <div
-              style={{
-                width: '400px',
-                height: '400px',
-              }}
-            >
-              <MapPositions
-                positions={[entry.position]}
-                zoneId={Number(entry.position.zone?.id)}
-                nwCornerX={entry.position.mapSetup.nwCornerX}
-                nwCornerY={entry.position.mapSetup.nwCornerY}
-                seCornerX={entry.position.mapSetup.seCornerX}
-                seCornerY={entry.position.mapSetup.seCornerY}
-              />
+      <div className="card bg-base-100 shadow-xl mb-6">
+        <div className="card-body">
+          <h1 className="card-title text-2xl mb-4">{chapter.name}</h1>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div className="stat">
+              <div className="stat-title">Location</div>
+              <div className="stat-value text-lg">
+                {chapter.position?.zone && (
+                  <Link to={`/zone/${chapter.position.zone.id}`} className="link-hover link-primary">
+                    {chapter.position.zone.name}
+                  </Link>
+                )}
+              </div>
+            </div>
+            <div className="stat">
+              <div className="stat-title">Position</div>
+              <div className="stat-value text-lg">({chapter.position?.x}, {chapter.position?.y})</div>
+            </div>
+            <div className="stat">
+              <div className="stat-title">Influence Rewards</div>
+              <div className="stat-value text-lg">
+                {chapter.influenceRewards?.experience ? `${chapter.influenceRewards.experience} XP` : 'None'}
+              </div>
             </div>
           </div>
-        </div>
-      )}
 
-      <div className="card mb-5">
-        <div className="card-content">
-          <p className="is-size-4 is-family-secondary has-text-info">
-            {t('pages:chapter.influenceRewards')}
-          </p>
+          {chapter.position && (
+            <>
+              <div className="divider"></div>
+              <h2 className="card-title">Map Location</h2>
+              <div className="card bg-base-200">
+                <div className="card-body">
+                  <MapPositions
+                    zoneId={chapter.position.zone?.id || ''}
+                    positions={[chapter.position]}
+                    mapSetup={chapter.position.mapSetup}
+                  />
+                </div>
+              </div>
+            </>
+          )}
 
-          <p className="is-size-6 is-family-secondary has-text-info">
-            {t('pages:chapter.tier1')}
-          </p>
-          <div className="is-flex is-flex-wrap-wrap is-flex-direction-row">
-            {entry.influenceRewards
-              .filter((reward) => reward.tier === 1)
-              .map((reward) => (
-                <ItemIconWithPopup key={reward.item.id} item={reward.item} />
-              ))}
-          </div>
-
-          <p className="is-size-6 is-family-secondary has-text-info">
-            {t('pages:chapter.tier2')}
-          </p>
-          <div className="is-flex is-flex-wrap-wrap is-flex-direction-row">
-            {entry.influenceRewards
-              .filter((reward) => reward.tier === 2)
-              .map((reward) => (
-                <ItemIconWithPopup key={reward.item.id} item={reward.item} />
-              ))}
-          </div>
-
-          <p className="is-size-6 is-family-secondary has-text-info">
-            {t('pages:chapter.tier3')}
-          </p>
-          <div className="is-flex is-flex-wrap-wrap is-flex-direction-row">
-            {entry.influenceRewards
-              .filter((reward) => reward.tier === 3)
-              .map((reward) => (
-                <ItemIconWithPopup key={reward.item.id} item={reward.item} />
-              ))}
-          </div>
+          {chapter.influenceRewards && (
+            <>
+              <div className="divider"></div>
+              <h2 className="card-title">Influence Rewards</h2>
+              <div className="card bg-base-200">
+                <div className="card-body">
+                  <div className="flex flex-wrap gap-2">
+                    {chapter.influenceRewards.experience && (
+                      <span className="badge badge-info">{chapter.influenceRewards.experience} XP</span>
+                    )}
+                    {chapter.influenceRewards.money && (
+                      <span className="badge badge-warning">{chapter.influenceRewards.money} Gold</span>
+                    )}
+                    {chapter.influenceRewards.items?.nodes?.map((item: any) => (
+                      <ItemIconWithPopup
+                        key={item.id}
+                        item={item}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </div>
     </div>

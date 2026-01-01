@@ -17,25 +17,17 @@ export function ScenarioListTable({
   const { t } = useTranslation(['common', 'components']);
 
   return (
-    <div className="table-container">
-      <table
-        className={clsx(
-          'table',
-          'is-striped',
-          'is-hoverable',
-          'is-marginless',
-          isMobile ? 'is-narrow' : 'is-fullwidth',
-        )}
-      >
+    <div className="overflow-x-auto">
+      <table className="table table-zebra table-hover table-compact w-full">
         <thead>
           <tr>
-            <th>{t('components:scenarioList.name')}</th>
-            <th>{t('components:scenarioList.time')}</th>
-            <th>{t('components:scenarioList.duration')}</th>
-            <th align="center">{t('components:scenarioList.winner')}</th>
-            <th align="right">{t('components:scenarioList.order')}</th>
-            <th align="right">{t('components:scenarioList.destruction')}</th>
-            <th aria-label="empty" />
+            <th className="text-left">{t('components:scenarioList.name')}</th>
+            <th className="text-left">{t('components:scenarioList.time')}</th>
+            <th className="text-left">{t('components:scenarioList.duration')}</th>
+            <th className="text-center">{t('components:scenarioList.winner')}</th>
+            <th className="text-right">{t('components:scenarioList.order')}</th>
+            <th className="text-right">{t('components:scenarioList.destruction')}</th>
+            <th className="text-center"></th>
           </tr>
         </thead>
         <tbody>
@@ -48,17 +40,13 @@ export function ScenarioListTable({
             });
 
             return (
-              <tr key={scenario.id}>
-                <td>{scenario.scenario.name}</td>
-                <td>
-                  {' '}
-                  <small>
-                    {formatISO(startDate, { representation: 'date' })}
-                    <br />
-                    {format(startDate, 'HH:mm:ss')}
-                  </small>
+              <tr key={scenario.id} className="hover:bg-base-200">
+                <td className="font-medium">{scenario.scenario.name}</td>
+                <td className="text-sm">
+                  <div>{formatISO(startDate, { representation: 'date' })}</div>
+                  <div className="text-xs text-base-content/60">{format(startDate, 'HH:mm:ss')}</div>
                 </td>
-                <td>
+                <td className="text-sm">
                   {t(
                     duration.hours === 0
                       ? 'components:scenarioList.scenarioDuration'
@@ -70,13 +58,14 @@ export function ScenarioListTable({
                     },
                   )}
                 </td>
-                <td align="center">
+                <td className="text-center">
                   {scenario.winner === 0 ? (
                     <img
                       src="/images/icons/scenario/order.png"
                       width={40}
                       height={40}
                       alt="Order"
+                      className="mx-auto"
                     />
                   ) : (
                     <img
@@ -84,19 +73,20 @@ export function ScenarioListTable({
                       width={40}
                       height={40}
                       alt="Destruction"
+                      className="mx-auto"
                     />
                   )}
                 </td>
-                <td align="right" className="scenariolist-score-order">
+                <td className="text-right font-medium text-primary">
                   {scenario.points[0]}
                 </td>
-                <td align="right" className="scenariolist-score-destruction">
+                <td className="text-right font-medium text-secondary">
                   {scenario.points[1]}
                 </td>
-                <td>
+                <td className="text-center">
                   <Link
                     to={`/scenario/${scenario.id}`}
-                    className="button is-primary p-2 is-pulled-right"
+                    className="btn btn-xs btn-primary"
                   >
                     {t('components:scenarioList.details')}
                   </Link>

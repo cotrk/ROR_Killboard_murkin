@@ -1,54 +1,55 @@
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router';
-import { KillGuildLeaderboardEntry } from '@/__generated__/graphql';
 import { GuildHeraldry } from '@/components/guild/GuildHeraldry';
-import '@/components/styles/table.scss';
 
-export function LeaderboardGuildTable({
-  data,
-}: {
-  data: KillGuildLeaderboardEntry[];
-}): React.ReactElement | null {
-  const { t } = useTranslation(['common', 'components']);
+interface GuildLeaderboardEntry {
+  rank: number;
+  kills: number;
+  guild: {
+    id: string;
+    name: string;
+    heraldry: any;
+  };
+}
+
+interface LeaderboardGuildTableProps {
+  data: GuildLeaderboardEntry[];
+}
+
+export function LeaderboardGuildTable({ data }: LeaderboardGuildTableProps): React.ReactElement {
+  const { t } = useTranslation(['common', 'leaderboard']);
 
   return (
-    <div className="table-container">
-      <table className="table is-striped is-hoverable is-fullwidth is-marginless">
+    <div className="overflow-x-auto">
+      <table className="table table-zebra w-full">
         <thead>
           <tr>
-            <th>{t('components:leaderboardGuild.rank')}</th>
-            <th id="th-guildname">
-              {t('components:leaderboardGuild.guildName')}
-            </th>
-            <th className="has-text-right">
-              {t('components:leaderboardGuild.kills')}
-            </th>
+            <th className="text-left">Rank</th>
+            <th className="text-left">Guild</th>
+            <th className="text-left">Kills</th>
           </tr>
         </thead>
         <tbody>
-          {data.map((leaderboardEntry) => (
-            <tr key={leaderboardEntry.rank}>
-              <td>{leaderboardEntry.rank}</td>
-              <td aria-labelledby="th-guildname">
-                <article className="media">
-                  <figure className="media-left">
-                    <GuildHeraldry
-                      size="48"
-                      heraldry={leaderboardEntry.guild.heraldry}
-                      realm={leaderboardEntry.guild.realm}
-                    />
-                  </figure>
-                  <div className="media-content">
-                    <div className="content">
-                      <Link to={`/guild/${leaderboardEntry.guild.id}`}>
-                        <strong>{leaderboardEntry.guild.name}</strong>
-                      </Link>
-                      <br />
-                    </div>
-                  </div>
-                </article>
+          {data.map((entry, index) => (
+            <tr key={entry.guild?.id || `guild-${index}`} className="hover">
+              <td className="font-bold">#{entry.rank}</td>
+              <td>
+                <div className="flex items-center gap-2">
+                  <GuildHeraldry
+                    heraldry={entry.guild.heraldry}
+                    realm={entry.guild.name}
+                    size="24"
+                  />
+                  <Link 
+                    to={`/guild/${entry.guild?.id}`} 
+                    className="link-hover link-primary font-medium"
+                  >
+                    {entry.guild.name}
+                  </Link>
+                </div>
               </td>
-              <td className="has-text-right">{leaderboardEntry.kills}</td>
+              <td className="font-mono">{entry.kills.toLocaleString()}</td>
             </tr>
           ))}
         </tbody>

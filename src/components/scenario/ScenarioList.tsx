@@ -71,7 +71,7 @@ export function ScenarioList({
     },
   });
 
-  if (loading) return <progress className="progress" />;
+  if (loading) return <div className="flex justify-center py-4"><span className="loading loading-spinner loading-md"></span></div>;
   if (error) return <ErrorMessage name={error.name} message={error.message} />;
   if (data?.scenarios?.nodes == null)
     return <ErrorMessage customText={t('common:notFound')} />;

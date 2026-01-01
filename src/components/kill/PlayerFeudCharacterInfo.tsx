@@ -1,69 +1,70 @@
-import { useTranslation } from 'react-i18next';
-import { Link } from 'react-router';
-import { Character } from '@/__generated__/graphql';
-import { careerIcon } from '@/utils';
 import { ReactElement } from 'react';
+import { useTranslation } from 'react-i18next';
 
-export function PlayerFeudCharacterInfo({
-  character,
-  id,
-}: {
-  character: Character;
-  id: string | number;
-}): ReactElement {
-  const { t } = useTranslation(['common', 'components', 'enums']);
+interface PlayerFeudCharacterInfoProps {
+  character: {
+    id: string;
+    name: string;
+    career: string;
+    level: number;
+    guild?: {
+      id: string;
+      name: string;
+    };
+  };
+  kills: number;
+  deaths: number;
+  victoryPoints: number;
+}
+
+export function PlayerFeudCharacterInfo({ character, kills, deaths, victoryPoints }: PlayerFeudCharacterInfoProps): ReactElement {
+  const { t } = useTranslation(['common', 'character']);
 
   return (
-    <div className="card mb-5">
-      <div className="card-content">
-        <article className="media">
-          <figure className="media-left">
-            <figure className="image is-128x128">
-              <img
-                src="/images/corner_icons/ea_icon_corner_character.png"
-                alt="Character"
-              />
-            </figure>
-          </figure>
-          <div className="media-content">
-            <a
-              className="is-size-4"
-              target="_blank"
-              rel="noopener noreferrer"
-              href={`https://www.returnofreckoning.com/armory/character/${id}`}
-            >
-              <strong>{character.name}</strong>
-            </a>
-            <p>
-              <span className="icon-text">
-                <strong>{`${t('components:characterInfo.career')} `}</strong>
-                <span className="icon">
-                  <img
-                    src={careerIcon(character.career)}
-                    alt={t(`enums:career.${character.career}`) ?? ''}
-                  />
-                </span>
-                <span>{t(`enums:career.${character.career}`)}</span>
-              </span>
-            </p>
-            <p>
-              <strong>{`${t('components:characterInfo.level')} `}</strong>
-              {character.level}
-            </p>
-            <p>
-              <strong>{`${t('components:characterInfo.renownRank')} `}</strong>
-              {character.renownRank}
-            </p>
-            {character.guildMembership?.guild != null && (
-              <p>
-                <strong>{`${t('components:characterInfo.guild')} `}</strong>
-                <Link to={`/guild/${character.guildMembership.guild.id}`}>
-                  {character.guildMembership.guild.name}
-                </Link>
-              </p>
-            )}
+    <div className="card bg-base-100 shadow-xl">
+      <div className="card-body p-4">
+        <div className="flex items-center gap-4">
+          <div className="avatar">
+            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-2xl">
+              <span className="text-primary">?</span>
+            </div>
           </div>
-        </article>
+          
+          <div className="flex-1">
+            <h3 className="text-xl font-bold">
+              {character.name}
+            </h3>
+            
+            <div className="text-sm text-base-content/80 space-y-1">
+              <div>
+                <span className="font-medium">Career:</span> {character.career}
+              </div>
+              <div>
+                <span className="font-medium">Level:</span> {character.level}
+              </div>
+              {character.guild && (
+                <div>
+                  <span className="font-medium">Guild:</span> {character.guild.name}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+        
+        <div className="stats stats-vertical">
+          <div className="stat">
+            <div className="stat-title">Kills</div>
+            <div className="stat-value text-success">{kills.toLocaleString()}</div>
+          </div>
+          <div className="stat">
+            <div className="stat-title">Deaths</div>
+            <div className="stat-value text-error">{deaths.toLocaleString()}</div>
+          </div>
+          <div className="stat">
+            <div className="stat-title">Victory Points</div>
+            <div className="stat-value text-primary">{victoryPoints.toLocaleString()}</div>
+          </div>
+        </div>
       </div>
     </div>
   );

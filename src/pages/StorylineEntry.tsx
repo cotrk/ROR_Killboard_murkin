@@ -1,16 +1,8 @@
-import { Link, useParams } from 'react-router';
 import { useTranslation } from 'react-i18next';
+import { Link, useParams } from 'react-router';
 import { gql, useQuery } from '@apollo/client';
-import { ErrorMessage } from '@/components/global/ErrorMessage';
 import { ReactElement } from 'react';
 import { GetWarJournalEntryQuery } from '@/__generated__/graphql';
-import clsx from 'clsx';
-import useWindowDimensions from '@/hooks/useWindowDimensions';
-import {
-  INFLUENCE_REWARDS_FRAGMENT,
-  InfluenceRewards,
-} from '@/components/storylineEntry/InfluenceRewards';
-import { MapPositions } from '@/components/MapPositions';
 
 const WAR_JOURNAL_ENTRY_DETAILS = gql`
   query GetWarJournalEntry($id: ID!) {
@@ -48,166 +40,121 @@ const WAR_JOURNAL_ENTRY_DETAILS = gql`
         id
         name
       }
-      activities {
-        id
-        name
-      }
-      position {
-        x
-        y
-      }
-      influenceRewards {
-        ...ChapterInfluenceReward
-      }
     }
   }
-  ${INFLUENCE_REWARDS_FRAGMENT}
 `;
 
 export function StorylineEntry(): ReactElement {
-  const { t } = useTranslation(['common', 'pages']);
-  const { id, storylineId } = useParams();
-  const { loading, error, data } = useQuery<GetWarJournalEntryQuery>(
-    WAR_JOURNAL_ENTRY_DETAILS,
-    {
-      variables: { id },
-    },
-  );
-  const { width } = useWindowDimensions();
-  const isMobile = width <= 768;
+  const { t } = useTranslation(['common', 'pages', 'storylines']);
+  const { id } = useParams();
 
-  if (loading) return <progress className="progress" />;
-  if (error) return <ErrorMessage name={error.name} message={error.message} />;
+  const { loading, error, data } = useQuery<GetWarJournalEntryQuery>(WAR_JOURNAL_ENTRY_DETAILS, {
+    variables: { id },
+  });
 
-  const entry = data?.warJournalEntry;
-  if (entry == null) return <ErrorMessage customText={t('common:notFound')} />;
+  if (loading) return <div className="skeleton h-64"></div>;
+  if (error) return <div className="alert alert-error">Error loading story entry: {error.message}</div>;
+  if (!data?.warJournalEntry) return <div className="alert alert-info">Story entry not found</div>;
+
+  const entry = data.warJournalEntry;
 
   return (
-    <div className="container is-max-widescreen mt-2">
-      <nav className="breadcrumb" aria-label="breadcrumbs">
-        <ul>
-          <li>
-            <Link to="/">{t('common:home')}</Link>
-          </li>
-          <li>
-            <Link to="/storylines">{t('common:storylines')}</Link>
-          </li>
-          <li>
-            <Link to={`/storylines/${storylineId}`}>
-              {t('pages:warJournalStoryline.storylineName', {
-                storylineName: entry.storyline.name,
-              })}
-            </Link>
-          </li>
-          <li className="is-active">
-            <Link to={`/storylines/${storylineId}/${id}`}>
-              {t('pages:warJournalStoryline.storylineName', {
-                storylineName: entry.name,
-              })}
-            </Link>
-          </li>
-        </ul>
-      </nav>
+    <div className="container mx-auto max-w-7xl mt-2">
+      <div className="flex justify-between items-center mb-4">
+        <nav className="breadcrumbs text-sm">
+          <ul>
+            <li>
+              <Link to="/" className="link-hover link-primary">{t('common:home')}</Link>
+            </li>
+            <li>
+              <Link to="/storylines" className="link-hover link-primary">{t('common:storylines')}</Link>
+            </li>
+            <li className="text-base-content/60">
+              {entry.title}
+            </li>
+          </ul>
+        </nav>
+      </div>
 
-      <div className="card mb-5">
-        <div className="card-content">
-          <p className="is-size-4 is-family-secondary has-text-info">
-            {entry.name}
-          </p>
-          {entry.npcName && (
-            <p className="is-size-5 is-family-secondary has-text-primary">
-              {entry.npcName}
-            </p>
-          )}
-          {entry.text && <p dangerouslySetInnerHTML={{ __html: entry.text }} />}
+      {/* Story Entry Card */}
+      <div className="card bg-base-100 shadow-xl mb-6">
+        <div className="card-body">
+          <h2 className="card-title text-2xl mb-4">{entry.title}</h2>
+          
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Entry Details */}
+            <div className="space-y-4">
+              <div className="stat">
+                <div className="stat-title">Location</div>
+                <div className="stat-value">{entry.locationText}</div>
+              </div>
+              
+              <div className="stat">
+                <div className="stat-title">NPC</div>
+                <div className="stat-value">{entry.npcName}</div>
+              </div>
+              
+              <div className="stat">
+                <div className="stat-title">Type</div>
+                <div className="stat-value">
+                  {entry.isRvR ? (
+                    <span className="badge badge-error">RvR</span>
+                  ) : (
+                    <span className="badge badge-info">PvE</span>
+                  )}
+                </div>
+              </div>
+              
+              <div className="stat">
+                <div className="stat-title">Area</div>
+                <div className="stat-value">{entry.area?.name}</div>
+              </div>
+              
+              <div className="stat">
+                <div className="stat-title">Zone</div>
+                <div className="stat-value">{entry.zone?.name}</div>
+              </div>
+            </div>
+
+            {/* Storyline */}
+            <div className="space-y-4">
+              <div className="stat">
+                <div className="stat-title">Storyline</div>
+                <div className="stat-value">{entry.storyline?.name}</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Entry Text */}
+          <div className="divider"></div>
+          <div className="prose max-w-none">
+            <p className="text-base-content/80 whitespace-pre-wrap">{entry.text}</p>
+          </div>
         </div>
       </div>
 
-      {entry.activities.filter((activity) => activity.name).length > 0 && (
-        <div className="card mb-5">
-          <div className="card-content">
-            <div className="table-container">
-              <table
-                className={clsx(
-                  'table',
-                  'is-striped',
-                  'is-hoverable',
-                  isMobile ? 'is-narrow' : 'is-fullwidth',
-                )}
+      {/* Actions */}
+      <div className="card bg-base-100 shadow-xl">
+        <div className="card-body">
+          <div className="flex gap-4">
+            <Link 
+              to={`/storylines`}
+              className="btn btn-outline"
+            >
+              Back to Storylines
+            </Link>
+            
+            {entry.zone && (
+              <Link 
+                to={`/zone/${entry.zone.id}`}
+                className="btn btn-primary"
               >
-                <thead>
-                  <tr>
-                    <th>{t('pages:warJournalStoryline.entryNumber')}</th>
-                    <th>{t('pages:warJournalStoryline.entryName')}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {entry.activities
-                    .filter((activity) => activity.name)
-                    .map((activity, index) => (
-                      <tr key={activity.id}>
-                        <td>{index + 1}</td>
-                        <td>
-                          <Link
-                            to={`/storylines/${storylineId}/${entry.id}/${activity.id}`}
-                          >
-                            {activity.name}
-                          </Link>
-                        </td>
-                      </tr>
-                    ))}
-                </tbody>
-              </table>
-            </div>
+                View Zone
+              </Link>
+            )}
           </div>
         </div>
-      )}
-
-      {entry.influenceRewards.length > 0 && (
-        <div className="card mb-5">
-          <div className="card-content">
-            <div className="is-size-4 is-family-secondary has-text-info">
-              {t('pages:warJournalStoryline.influenceRewards')}
-            </div>
-
-            <div className="is-size-5 is-family-secondary has-text-primary">
-              {t('pages:warJournalStoryline.basicRewards')}
-            </div>
-            <InfluenceRewards rewards={entry.influenceRewards} tier={1} />
-
-            <div className="is-size-5 is-family-secondary has-text-primary">
-              {t('pages:warJournalStoryline.advancedRewards')}
-            </div>
-            <InfluenceRewards rewards={entry.influenceRewards} tier={2} />
-
-            <div className="is-size-5 is-family-secondary has-text-primary">
-              {t('pages:warJournalStoryline.eliteRewards')}
-            </div>
-            <InfluenceRewards rewards={entry.influenceRewards} tier={3} />
-          </div>
-        </div>
-      )}
-
-      {entry.zone &&
-      entry.position &&
-      entry.position.mapSetup &&
-      entry.position.zone?.id === entry.zone.id ? (
-        <div className="card mb-5">
-          <div className="card-content">
-            <p className="is-size-4 is-family-secondary has-text-info">
-              {entry.locationText}
-            </p>
-            <MapPositions
-              positions={[entry.position]}
-              zoneId={Number(entry.position.zone?.id)}
-              nwCornerX={entry.position.mapSetup.nwCornerX}
-              nwCornerY={entry.position.mapSetup.nwCornerY}
-              seCornerX={entry.position.mapSetup.seCornerX}
-              seCornerY={entry.position.mapSetup.seCornerY}
-            />{' '}
-          </div>
-        </div>
-      ) : null}
+      </div>
     </div>
   );
 }

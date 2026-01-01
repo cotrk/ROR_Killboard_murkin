@@ -7,11 +7,7 @@ import {
   format,
 } from 'date-fns';
 import { Link, useParams } from 'react-router';
-import { ErrorMessage } from '@/components/global/ErrorMessage';
-import {
-  INSTANCE_ENCOUNTER_RUN_SCOREBOARD_FRAGMENT,
-  InstanceRunScoreboard,
-} from '@/components/instance_run/InstanceRunScoreboard';
+import { ReactElement } from 'react';
 import { GetInstanceEncounterRunQuery } from '@/__generated__/graphql';
 
 const INSTANCE_ENCOUNTER_RUN = gql`
@@ -21,7 +17,21 @@ const INSTANCE_ENCOUNTER_RUN = gql`
       start
       end
       scoreboardEntries {
-        ...InstanceEncounterRunScoreboardEntry
+        character {
+          id
+          name
+          career
+        }
+        guild {
+          id
+          name
+        }
+        damageDone
+        damageTaken
+        kills
+        deaths
+        renownEarned
+        score
       }
       encounter {
         id
@@ -29,11 +39,9 @@ const INSTANCE_ENCOUNTER_RUN = gql`
       }
     }
   }
-
-  ${INSTANCE_ENCOUNTER_RUN_SCOREBOARD_FRAGMENT}
 `;
 
-export function InstanceEncounterRun() {
+export function InstanceEncounterRun(): ReactElement {
   const { instanceRunId, id } = useParams();
   const { t } = useTranslation(['common', 'pages']);
   const { data, error, loading } = useQuery<GetInstanceEncounterRunQuery>(
@@ -45,130 +53,186 @@ export function InstanceEncounterRun() {
     },
   );
 
-  if (loading || !data?.instanceEncounterRun)
-    return <progress className="progress" />;
-  if (error) return <ErrorMessage name={error.name} message={error.message} />;
+  if (loading || !data?.instanceEncounterRun) return <div className="skeleton h-64"></div>;
+  if (error) return <div className="alert alert-error">Error loading instance run: {error.message}</div>;
 
-  const { instanceEncounterRun } = data;
-
-  const startDate = new Date(instanceEncounterRun.start);
-  const endDate = new Date(instanceEncounterRun.end);
-  const durationObject = intervalToDuration({
-    start: startDate,
-    end: endDate,
-  });
-
-  const duration = formatDuration(durationObject);
-  const itemRatings = instanceEncounterRun.scoreboardEntries.map(
-    (e) => e.itemRating,
-  );
-  const itemRatingMin = Math.min(...itemRatings);
-  const itemRatingMax = Math.max(...itemRatings);
-  const itemRatingAverage =
-    itemRatings.reduce((a, b) => a + b) / itemRatings.length;
-  const numTanks = instanceEncounterRun.scoreboardEntries.filter((e) =>
-    [
-      'IRON_BREAKER',
-      'BLACK_ORC',
-      'KNIGHT_OF_THE_BLAZING_SUN',
-      'CHOSEN',
-      'SWORD_MASTER',
-      'BLACK_GUARD',
-    ].includes(e.character.career),
-  ).length;
-
-  const numHealers = instanceEncounterRun.scoreboardEntries.filter(
-    (e) =>
-      [
-        'RUNE_PRIEST',
-        'SHAMAN',
-        'WARRIOR_PRIEST',
-        'ZEALOT',
-        'ARCHMAGE',
-        'DISCIPLE_OF_KHAINE',
-      ].includes(e.character.career) && e.healing > e.damage,
-  ).length;
-
-  const numDPS =
-    instanceEncounterRun.scoreboardEntries.length - numTanks - numHealers;
+  const run = data.instanceEncounterRun;
+  const duration = run.end && run.start 
+    ? intervalToDuration({ start: new Date(run.start), end: new Date(run.end) })
+    : null;
 
   return (
-    <div className="container is-max-widescreen mt-2">
-      <nav className="breadcrumb" aria-label="breadcrumbs">
-        <ul>
-          <li>
-            <Link to="/">{t('common:home')}</Link>
-          </li>
-          <li>
-            <Link to="/instance-runs">{t('common:instanceRuns')}</Link>
-          </li>
-          <li>
-            <Link to={`/instance-run/${instanceRunId}`}>
-              {t('pages:instanceEncounterRun.instanceRunId', {
-                id: instanceRunId,
-              })}
-            </Link>
-          </li>
-          <li className="is-active">
-            <Link to={`/instance-run/${instanceRunId}/${id}`}>
-              {t('pages:instanceEncounterRun.title', { id })}
-            </Link>
-          </li>
-        </ul>
-      </nav>
+    <div className="container mx-auto max-w-7xl mt-2">
+      <div className="flex justify-between items-center mb-4">
+        <nav className="breadcrumbs text-sm">
+          <ul>
+            <li>
+              <Link to="/" className="link-hover link-primary">{t('common:home')}</Link>
+            </li>
+            <li>
+              <Link to="/instance-runs" className="link-hover link-primary">{t('common:instanceRuns')}</Link>
+            </li>
+            <li className="text-base-content/60">
+              {run.encounter?.name || 'Instance Run'}
+            </li>
+          </ul>
+        </nav>
+      </div>
 
-      <p className="is-size-4">
-        <strong>{instanceEncounterRun.encounter?.name}</strong>
-      </p>
-      <div className="card mb-5">
-        <div className="card-content">
-          <article className="media">
-            <div className="media-content">
-              <p>
-                <strong>{t('pages:instanceEncounterRun.startTime')}</strong>{' '}
-                {formatISO(startDate, { representation: 'date' })}
-                {format(startDate, 'HH:mm')}
-              </p>
-              <p>
-                <strong>{t('pages:instanceEncounterRun.duration')}</strong>{' '}
-                {duration}
-              </p>
+      {/* Instance Run Info Card */}
+      <div className="card bg-base-100 shadow-xl mb-6">
+        <div className="card-body">
+          <h2 className="card-title text-2xl mb-4">
+            {run.encounter?.name || 'Instance Run'} Details
+          </h2>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="stat">
+              <div className="stat-title">Start Time</div>
+              <div className="stat-value text-sm">
+                {run.start ? format(new Date(run.start), 'MMM dd, yyyy HH:mm') : 'Unknown'}
+              </div>
             </div>
-            <div className="media-content">
-              <p>
-                <strong>{t('pages:instanceEncounterRun.itemRatingMin')}</strong>{' '}
-                {itemRatingMin}
-              </p>
-              <p>
-                <strong>
-                  {t('pages:instanceEncounterRun.itemRatingAverage')}
-                </strong>{' '}
-                {itemRatingAverage.toFixed(0)}
-              </p>
-              <p>
-                <strong>{t('pages:instanceEncounterRun.itemRatingMax')}</strong>{' '}
-                {itemRatingMax}
-              </p>
+            
+            <div className="stat">
+              <div className="stat-title">End Time</div>
+              <div className="stat-value text-sm">
+                {run.end ? format(new Date(run.end), 'MMM dd, yyyy HH:mm') : 'Unknown'}
+              </div>
             </div>
-            <div className="media-content">
-              <p>
-                <strong>{t('pages:instanceEncounterRun.numTanks')}</strong>{' '}
-                {numTanks}
-              </p>
-              <p>
-                <strong>{t('pages:instanceEncounterRun.numHealers')}</strong>{' '}
-                {numHealers}
-              </p>
-              <p>
-                <strong>{t('pages:instanceEncounterRun.numDps')}</strong>{' '}
-                {numDPS}
-              </p>
+            
+            <div className="stat">
+              <div className="stat-title">Duration</div>
+              <div className="stat-value text-sm">
+                {duration ? formatDuration(duration) : 'Unknown'}
+              </div>
             </div>
-          </article>
+            
+            <div className="stat">
+              <div className="stat-title">Status</div>
+              <div className="stat-value text-sm">
+                {run.end ? (
+                  <span className="text-success">Completed</span>
+                ) : (
+                  <span className="text-warning">In Progress</span>
+                )}
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
-      <InstanceRunScoreboard entries={instanceEncounterRun.scoreboardEntries} />
+      {/* Scoreboard */}
+      <div className="card bg-base-100 shadow-xl mb-6">
+        <div className="card-body">
+          <h3 className="text-lg font-bold mb-4">Scoreboard</h3>
+          
+          {run.scoreboardEntries && run.scoreboardEntries.length > 0 ? (
+            <div className="overflow-x-auto">
+              <table className="table table-zebra w-full">
+                <thead>
+                  <tr>
+                    <th>Rank</th>
+                    <th>Character</th>
+                    <th>Guild</th>
+                    <th>Damage</th>
+                    <th>Kills</th>
+                    <th>Deaths</th>
+                    <th>Renown</th>
+                    <th>Score</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {run.scoreboardEntries
+                    .sort((a, b) => b.score - a.score)
+                    .map((entry, index) => (
+                      <tr key={entry.character.id}>
+                        <td>
+                          <div className="badge badge-primary">
+                            #{index + 1}
+                          </div>
+                        </td>
+                        <td>
+                          <Link 
+                            to={`/character/${entry.character.id}`}
+                            className="link-hover link-primary font-medium"
+                          >
+                            {entry.character.name}
+                          </Link>
+                          <div className="text-sm text-base-content/80">
+                            {entry.character.career}
+                          </div>
+                        </td>
+                        <td>
+                          {entry.guild && (
+                            <Link 
+                              to={`/guild/${entry.guild.id}`}
+                              className="link-hover link-primary text-sm"
+                            >
+                              {entry.guild.name}
+                            </Link>
+                          )}
+                        </td>
+                        <td>
+                          <div className="text-sm font-mono">
+                            {entry.damage?.toLocaleString() || '0'}
+                          </div>
+                        </td>
+                        <td>
+                          <div className="text-sm font-mono">
+                            {entry.killDamage?.toLocaleString() || '0'}
+                          </div>
+                        </td>
+                        <td>
+                          <div className="text-sm font-mono">
+                            {entry.deaths?.toLocaleString() || '0'}
+                          </div>
+                        </td>
+                        <td>
+                          <div className="text-sm font-mono text-success">
+                            +{entry.renownRank || 0}
+                          </div>
+                        </td>
+                        <td>
+                          <div className="text-sm font-mono text-primary">
+                            {entry.level?.toLocaleString() || '0'}
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </div>
+          ) : (
+            <div className="alert alert-info">
+              No scoreboard data available for this instance run.
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Actions */}
+      <div className="card bg-base-100 shadow-xl">
+        <div className="card-body">
+          <div className="flex gap-4">
+            <Link 
+              to={`/instance/${run.encounter?.id}`}
+              className="btn btn-outline"
+            >
+              View Instance Details
+            </Link>
+            
+            {instanceRunId && (
+              <Link 
+                to={`/instance-runs`}
+                className="btn btn-primary"
+              >
+                Back to Instance Runs
+              </Link>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

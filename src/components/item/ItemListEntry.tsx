@@ -13,19 +13,24 @@ export function ItemListEntry({
   const { t } = useTranslation(['enums']);
 
   return (
-    <tr>
+    <tr className="hover:bg-base-200">
       <td>
         <ItemIconWithPopup item={item} />
       </td>
       <td>
-        <Link to={`/item/${item.id}`}>
-          <div className={`${itemNameClass(item)} has-text-weight-semi/bold`}>
-            {item.name}
-          </div>
+        <Link to={`/item/${item.id}`} className="font-semibold hover:text-primary transition-colors">
+          {item.name}
         </Link>
       </td>
-      <td>{t(`enums:itemType.${item.type}`)}</td>
-      <td>{t(`enums:itemSlot.${item.slot}`)}</td>
+      <td className="text-sm text-base-content/60">{t(`enums:itemType.${item.type}`)}</td>
+      <td className="text-sm text-base-content/60">{t(`enums:itemSlot.${item.slot}`)}</td>
+      <td className="text-sm text-base-content/60">
+        {item.stats?.slice(0, 3).map(stat => (
+          <div key={stat.stat} className="badge badge-ghost badge-sm">
+            {stat.stat}: {stat.value}
+          </div>
+        ))}
+      </td>
     </tr>
   );
 }
